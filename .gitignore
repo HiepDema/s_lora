@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+runs/
+runs_*/
+*.pt
+*.json
+*.txt
+.venv/
