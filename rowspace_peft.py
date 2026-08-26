@@ -191,8 +191,9 @@ class RowSpaceLinear(nn.Module):
             self.scale = 1.0
         else:
             self.register_buffer("C", C)
-            self.lora_down = nn.Parameter(torch.empty(k, rank, dtype=C.dtype))
-            self.lora_up = nn.Parameter(torch.zeros(rank, k, dtype=C.dtype))
+            # PHAI truyen device: neu khong, tham so moi nam tren CPU khi model da o GPU
+            self.lora_down = nn.Parameter(torch.empty(k, rank, dtype=C.dtype, device=C.device))
+            self.lora_up = nn.Parameter(torch.zeros(rank, k, dtype=C.dtype, device=C.device))
             nn.init.kaiming_uniform_(self.lora_down, a=math.sqrt(5))
             self.scale = (alpha if alpha is not None else rank) / rank
 
