@@ -31,6 +31,9 @@ TARGETS = {
     "qwen2_mlp": ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
     "qwen2_all": ["self_attn.k_proj", "self_attn.v_proj",
                   "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
+    # Llama dung dung ten module nhu Qwen2 -> alias cho de doc, khong phai tap moi
+    "llama_kv": ["self_attn.k_proj", "self_attn.v_proj"],
+    "llama_mlp": ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
 }
 
 
@@ -115,6 +118,123 @@ def apply_lora(model, targets, rank, alpha):
     return model
 
 
+# =========================================================================== VeRA
+
+class VeRAShared(nn.Module):
+    """Giu A va B dung chung cho MOI lop.
+
+    Dang ky lam buffer o DAY va chi o day, roi cac lop VeRA tro toi bang
+    object.__setattr__ (khong qua nn.Module.__setattr__, neu khong moi lop se
+    thanh cha cua no va model.to(dev) se nhan ra 56 ban sao rieng biet).
+    persistent=False vi A, B sinh lai duoc tu seed -> khong can vao checkpoint.
+    """
+
+    def __init__(self, A, B):
+        super().__init__()
+        self.register_buffer("A", A, persistent=False)
+        self.register_buffer("B", B, persistent=False)
+
+
+class VeRALayer(nn.Module):
+    """VeRA (Kopiczko et al., ICLR 2024): h = x W0 + ((x A) * d) B * b.
+
+    A [d_in, r] va B [r, d_out] ngau nhien, DONG BANG, DUNG CHUNG moi lop;
+    chi hai vector d (r) va b (d_out) duoc train.
+
+    Tham so moi lop = r + d_out, KHONG phu thuoc d_in. He qua cho k_proj/v_proj
+    cua Qwen (d_in=1536, d_out=256): r=256 moi ton bang S-LoRA r=1. Chay VeRA
+    o r nho nhu LoRA la vo nghia.
+
+    b khoi tao 0 -> delta = 0 luc bat dau, dung nhu LoRA.
+    """
+
+    def __init__(self, base, shared, d_in, d_out, rank, d_init):
+        super().__init__()
+        self.base = base
+        object.__setattr__(self, "shared", shared)     # xem VeRAShared
+        self.d_in, self.d_out, self.rank = d_in, d_out, rank
+        w = base.weight
+        self.vera_d = nn.Parameter(torch.full((rank,), d_init,
+                                              dtype=w.dtype, device=w.device))
+        self.vera_b = nn.Parameter(torch.zeros(d_out, dtype=w.dtype, device=w.device))
+        if not isinstance(base, nn.Linear):
+            self.nf = base.nf                          # Conv1D cua GPT-2
+
+    def _AB(self):
+        return (self.shared.A[:self.d_in, :self.rank],
+                self.shared.B[:self.rank, :self.d_out])
+
+    def forward(self, x):
+        A, B = self._AB()
+        return self.base(x) + ((((x @ A) * self.vera_d) @ B) * self.vera_b)
+
+
+def _target_shapes(model, targets):
+    """Tra ve list (d_in, d_out) theo layout Conv1D cho moi ma tran dich."""
+    out = []
+    for block in get_blocks(model):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            w, _ = _conv1d_style_weight(getattr(parent, attr))
+            out.append(tuple(w.shape))
+    return out
+
+
+def apply_vera(model, targets, rank, seed=0, d_init=0.1):
+    """Gan VeRA. A, B sinh mot lan tu `seed` roi cat lat cho tung lop."""
+    shapes = _target_shapes(model, targets)
+    max_in = max(s[0] for s in shapes)
+    max_out = max(s[1] for s in shapes)
+    ref = next(model.parameters())
+    g = torch.Generator(device="cpu").manual_seed(seed)
+    # Kaiming uniform viet tay thay vi nn.init.kaiming_uniform_(generator=...):
+    # kwarg `generator` chi co tu torch 2.4, va _calculate_fan_in_and_fan_out
+    # gia dinh layout [out, in] trong khi A cua ta la [in, r]. Tu tinh bound
+    # theo dung chieu bi co lai trong phep nhan: 1/sqrt(fan_in) voi a=sqrt(5).
+    A = torch.empty(max_in, rank, dtype=ref.dtype).uniform_(
+        -1 / math.sqrt(max_in), 1 / math.sqrt(max_in), generator=g)
+    B = torch.empty(rank, max_out, dtype=ref.dtype).uniform_(
+        -1 / math.sqrt(rank), 1 / math.sqrt(rank), generator=g)
+    shared = VeRAShared(A.to(ref.device), B.to(ref.device))
+    model.add_module("_vera_shared", shared)           # de model.to(dev) keo theo
+
+    for block in get_blocks(model):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            mod = getattr(parent, attr)
+            w, _ = _conv1d_style_weight(mod)
+            setattr(parent, attr,
+                    VeRALayer(mod, shared, w.shape[0], w.shape[1], rank, d_init))
+
+    for p in model.parameters():
+        p.requires_grad_(False)
+    for m in model.modules():
+        if isinstance(m, VeRALayer):
+            m.vera_d.requires_grad_(True)
+            m.vera_b.requires_grad_(True)
+    return model
+
+
+@torch.no_grad()
+def merge_vera(model, targets):
+    """Gop VeRA vao trong so goc -> kien truc tro lai y het model ban dau."""
+    for block in get_blocks(model):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            mod = getattr(parent, attr)
+            if not isinstance(mod, VeRALayer):
+                continue
+            A, B = mod._AB()
+            d = ((A.double() * mod.vera_d.double()) @ B.double()
+                 ) * mod.vera_b.double()               # [d_in, d_out]
+            w = mod.base.weight.data
+            w += (d.T if isinstance(mod.base, nn.Linear) else d).to(w.dtype)
+            setattr(parent, attr, mod.base)
+    if hasattr(model, "_vera_shared"):
+        del model._vera_shared
+    return model
+
+
 # =========================================================================== rowspace
 
 class RowSpaceLinearWrap(RowSpaceLinear):
@@ -195,6 +315,7 @@ def merge_lora(model, targets):
 def merge_all(model, targets):
     """Gop bat ke dang nao dang duoc dung."""
     merge_back(model, targets)
+    merge_vera(model, targets)
     return merge_lora(model, targets)
 
 
@@ -208,8 +329,23 @@ def param_counts(model, n_orig):
 
 
 def predict_params(shapes, rank, L, method):
-    """shapes: list (out, in). Tra ve so tham so train duoc du kien."""
+    """shapes: list (out, in). Tra ve so tham so train duoc du kien.
+
+    VeRA: r + d_out moi ma tran (A, B dong bang va sinh lai duoc tu seed nen
+    khong tinh). Voi shapes theo (out, in) thi d_out = o.
+    """
     s = 0
     for o, i in shapes:
-        s += 2 * min(o, i) * rank if method == "rowspace" else rank * (o + i)
+        if method == "rowspace":
+            s += 2 * min(o, i) * rank
+        elif method == "vera":
+            s += rank + o
+        else:
+            s += rank * (o + i)
     return s * L
+
+
+def vera_rank_for(shapes, L, budget):
+    """Chon rank VeRA de tong tham so train duoc bam sat `budget`."""
+    n = len(shapes) * L
+    return max(1, round((budget - sum(o for o, _ in shapes) * L) / n))

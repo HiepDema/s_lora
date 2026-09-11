@@ -6,3 +6,4 @@ runs_*/
 *.json
 *.txt
 .venv/
+S-LoRA.code-workspace

@@ -5,6 +5,7 @@ Fine-tune + danh gia GPT-2 tren E2E NLG Challenge, so sanh:
   --method rowspace   LoRA len cac ma tran VUONG cua phan ra [I|X]   (y tuong cua ban)
   --method rowspace-full   train thang ma tran vuong (khong LoRA)
   --method lora       LoRA thuong len chinh cac Conv1D goc            (doi chung)
+  --method target-ft  train tu do chinh cac ma tran dich                (tran tren dung)
   --method full       full fine-tune                                 (tran tren)
   --method none       khong train, chi danh gia zero-shot             (san duoi)
 
@@ -42,7 +43,7 @@ import torch
 import torch.nn as nn
 
 from peft_generic import (TARGETS, LoRAConv1D, LoRALinear, apply_lora,
-                          convert_rowspace, merge_all, param_counts)
+                          apply_vera, convert_rowspace, merge_all, param_counts)
 from rowspace_peft import NONSQUARE, RowSpaceLinear
 
 PARQUET = "hf://datasets/tuetschek/e2e_nlg@refs%2Fconvert%2Fparquet/default"
@@ -298,6 +299,18 @@ def eval_loss(model, data, tok, a, max_n=None):
     return tot / max(ntok, 1)
 
 
+def save_ckpt(path, state, meta):
+    """Chi luu tham so train duoc + metadata.
+
+    Phan dong bang (X, sel, rest, C) sinh ra tu W0 bang pivoted QR mot cach TAT DINH,
+    nen nap lai chi can chay lai convert_rowspace voi cung config. Nho vay checkpoint
+    chi vai MB thay vi 6 GB.
+    """
+    torch.save({"trainable": {n: v.detach().cpu() for n, v in state.items()},
+                "meta": meta}, path)
+    return os.path.getsize(path) / 2**20
+
+
 def trainable_state(model):
     return {n: p for n, p in model.named_parameters() if p.requires_grad}
 
@@ -318,6 +331,8 @@ def train(model, data, val_data, tok, a):
     step, t0, run = 0, time.perf_counter(), None
     t_start = t0
     val_hist, best, val_s = [], (float("inf"), -1, None), 0.0
+    bad, stopped = 0, None            # bad = so lan val khong cai thien lien tiep
+    train_hist = []                   # loss tren tap train, do CUNG CACH voi val
     for ep in range(a.epochs):
         for bidx in make_batches(data, a.batch):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
@@ -340,24 +355,63 @@ def train(model, data, val_data, tok, a):
         if val_data and (ep + 1) % a.val_every == 0:
             tv = time.perf_counter()
             vl = eval_loss(model, val_data, tok, a, a.val_max)
+            # Cung do tren TAP TRAIN, cung cach (khong smoothing, eval mode) -> khoang
+            # cach train/val moi co y nghia. Train loss in ra luc chay CO smoothing nen
+            # cao hon val khoang 1.5-2.0 chi vi so hang smoothing, khong phai do fit tot.
+            tl = eval_loss(model, data, tok, a, a.train_eval_max) if a.train_eval_max else None
             val_s += time.perf_counter() - tv
             val_hist.append(round(vl, 4))
-            mark = ""
-            if vl < best[0]:
+            if tl is not None:
+                train_hist.append(round(tl, 4))
+            improved = vl < best[0] - a.min_delta
+            if improved:
                 best = (vl, ep, {n: v.detach().clone() for n, v in trainable_state(model).items()})
+                bad = 0
                 mark = "  <- tot nhat"
-            print(f"    [ep {ep}] val loss {vl:.4f}  ppl {math.exp(vl):.3f}  "
+            else:
+                bad += 1
+                mark = f"  (khong cai thien {bad}/{a.patience})" if a.patience else ""
+            gap = f"  train {tl:.4f}  gap {vl - tl:+.4f}" if tl is not None else ""
+            print(f"    [ep {ep}] val loss {vl:.4f}  ppl {math.exp(vl):.3f}{gap}  "
                   f"({time.perf_counter() - tv:.0f}s){mark}", flush=True)
+
+            if a.patience and bad >= a.patience:
+                stopped = ep
+                print(f"    EARLY STOPPING: val khong cai thien {bad} lan lien tiep. "
+                      f"Tot nhat: epoch {best[1]} (val {best[0]:.4f}).")
+                print(f"    luu y: lich lr tuyen tinh chua chay het, lr dung o "
+                      f"{sched.get_last_lr()[0]:.2e} thay vi 0.")
+                break
     el = time.perf_counter() - t_start - val_s      # tru phan val ra
     vram = (torch.cuda.max_memory_allocated() / 2**30
             if str(a.device).startswith("cuda") else 0.0)
 
     out = {}
+    meta = dict(model=a.model, method=a.method, rank=a.rank, alpha=a.alpha,
+                basis=a.basis, targets=a.targets, seed=a.seed, epochs_run=len(val_hist))
+    if not a.no_save_ckpt:
+        os.makedirs(a.out_dir, exist_ok=True)
+        # LAST phai luu TRUOC khi khoi phuc best, khong thi ghi de mat trong so cuoi
+        pl = f"{a.out_dir}/{a.tag}_last.pt"
+        mb = save_ckpt(pl, trainable_state(model), meta | {"which": "last"})
+        out["ckpt_last"] = pl
+        print(f"    luu {pl}  ({mb:.1f} MB)")
+        if best[2] is not None:
+            pb = f"{a.out_dir}/{a.tag}_best.pt"
+            save_ckpt(pb, best[2], meta | {"which": "best", "epoch": best[1],
+                                           "val_loss": round(best[0], 4)})
+            out["ckpt_best"] = pb
+            print(f"    luu {pb}  (epoch {best[1]}, val {best[0]:.4f})")
+
     if val_hist:
         out.update(val_hist=val_hist, val_loss=val_hist[-1],
                    best_val=round(best[0], 4), best_epoch=best[1],
                    val_ppl=round(math.exp(val_hist[-1]), 3),
-                   val_s=round(val_s, 1))
+                   train_eval_hist=train_hist,
+                   train_eval_loss=train_hist[-1] if train_hist else None,
+                   overfit_gap=round(val_hist[-1] - train_hist[-1], 4) if train_hist else None,
+                   val_s=round(val_s, 1), epochs_run=len(val_hist),
+                   stopped_epoch=stopped)
         if a.best_epoch and best[2] is not None and best[1] != a.epochs - 1:
             with torch.no_grad():
                 cur = trainable_state(model)
@@ -366,8 +420,9 @@ def train(model, data, val_data, tok, a):
             print(f"    -> khoi phuc epoch {best[1]} (val {best[0]:.4f}), "
                   f"thay vi epoch cuoi ({val_hist[-1]:.4f})")
             out["restored_epoch"] = best[1]
-    return dict(**out, final_loss=run, train_s=round(el, 1), train_it_s=round(steps / el, 3),
-                train_step_ms=round(el / steps * 1000, 2), peak_vram_gb=round(vram, 2))
+    return dict(**out, final_loss=run, train_s=round(el, 1), train_it_s=round(step / el, 3),
+                train_step_ms=round(el / step * 1000, 2), steps_run=step,
+                peak_vram_gb=round(vram, 2))
 
 
 # =========================================================================== main
@@ -383,6 +438,20 @@ def build_model(a):
         convert_rowspace(model, a.targets, a.basis, rank, a.alpha, a.dtype, verbose=True)
     elif a.method == "lora":
         apply_lora(model, a.targets, a.rank, a.alpha)
+    elif a.method == "vera":
+        apply_vera(model, a.targets, a.rank, seed=a.seed, d_init=a.vera_d_init)
+    elif a.method == "target-ft":
+        # Tran tren DUNG NGHIA: train tu do chinh cac ma tran dich, khong phan ra,
+        # khong LoRA. So sanh voi no cho biet rang buoc khong gian con + hang thap
+        # lam mat bao nhieu. Full-model FT tra loi cau khac (no doi ca 28 lop).
+        from peft_generic import get_blocks, resolve
+        for p in model.parameters():
+            p.requires_grad_(False)
+        for block in get_blocks(model):
+            for name in a.targets:
+                parent, attr = resolve(block, name)
+                for p in getattr(parent, attr).parameters():
+                    p.requires_grad_(True)
     elif a.method == "full":
         for p in model.parameters():
             p.requires_grad_(True)
@@ -396,11 +465,14 @@ def build_model(a):
 def main():
     p = argparse.ArgumentParser(description="Fine-tune GPT-2 tren E2E NLG")
     p.add_argument("--method", required=True,
-                   choices=["rowspace", "rowspace-full", "lora", "full", "none"])
+                   choices=["rowspace", "rowspace-full", "lora", "vera", "target-ft",
+                            "full", "none"])
     p.add_argument("--model", default="gpt2-medium")
     p.add_argument("--rank", type=int, default=8)
     p.add_argument("--alpha", type=float, default=None, help="mac dinh = rank")
     p.add_argument("--basis", choices=["colperm", "svd"], default="colperm")
+    p.add_argument("--vera-d-init", type=float, default=0.1,
+                   help="method=vera: gia tri khoi tao vector d (paper dung 0.1)")
     p.add_argument("--match-params", action="store_true",
                    help="method=lora: tu chon hang de khop so tham so voi rowspace cung --rank")
     p.add_argument("--targets", nargs="+", default=None)
@@ -422,7 +494,15 @@ def main():
     p.add_argument("--eval-before", action="store_true", help="danh gia truoc khi train")
     p.add_argument("--val-every", type=int, default=1, help="do val moi N epoch")
     p.add_argument("--val-max", type=int, default=None, help="gioi han so vi du val")
+    p.add_argument("--train-eval-max", type=int, default=1000,
+                   help="so vi du train de do loss KHONG smoothing (0 = tat)")
     p.add_argument("--no-val", action="store_true")
+    p.add_argument("--no-save-ckpt", action="store_true",
+                   help="khong luu checkpoint (mac dinh luu ca last va best)")
+    p.add_argument("--patience", type=int, default=0,
+                   help="dung som neu val khong cai thien N lan lien tiep (0 = tat)")
+    p.add_argument("--min-delta", type=float, default=0.0,
+                   help="muc cai thien toi thieu de tinh la co tien bo")
     p.add_argument("--best-epoch", action="store_true",
                    help="khoi phuc checkpoint co val loss thap nhat truoc khi eval")
     p.add_argument("--bench-batch", type=int, default=8)
@@ -445,12 +525,21 @@ def main():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
+    if a.patience and not a.best_epoch:
+        a.best_epoch = True          # dung som ma van lay epoch cuoi thi vo nghia
+        print("  --patience keo theo --best-epoch")
     a.dtype = torch.float32 if a.fp32_factorize else torch.float64
     if a.targets is None:
         key = a.target_set or ("qwen2_kv" if "qwen" in a.model.lower() else "gpt2")
         a.targets = TARGETS[key]
     if a.lr is None:
-        a.lr = 5e-5 if a.method == "full" else 2e-4
+        # VeRA chi train hai vector d, b nen gradient nho hon han -> paper dung
+        # lr cao hon LoRA khoang 50x. Bê nguyen 2e-4 sang thi VeRA gan nhu khong
+        # hoc va ta se ket luan sai. Van nen quet lr truoc khi tin ket qua.
+        if a.method == "vera":
+            a.lr = 1e-2
+        else:
+            a.lr = 5e-5 if a.method in ("full", "target-ft") else 2e-4
     if a.method == "lora" and a.match_params:
         from transformers import AutoConfig
         from peft_generic import predict_params
@@ -481,6 +570,7 @@ def main():
     torch.manual_seed(a.seed)
     _al = "" if a.alpha == a.rank else f"a{a.alpha:g}"
     tag = f"{a.method}_r{a.rank}{_al}_{a.basis if 'rowspace' in a.method else 'na'}_s{a.seed}"
+    a.tag = tag
     print(f"\n=== {tag} ===\nmodel={a.model}  device={a.device}  targets={a.targets}")
 
     from transformers import AutoTokenizer

@@ -66,9 +66,13 @@ for model in sorted({k[0] for k in g}):
         h = g[k][0].get("val_hist")
         if h:
             be = g[k][0].get("best_epoch")
-            trend = " -> ".join(f"{x:.4f}" for x in h)
-            print(f"\n  val theo epoch [{k[1]} r={k[2]}]: {trend}"
-                  + (f"   (tot nhat: epoch {be})" if be is not None else ""))
+            st = g[k][0].get("stopped_epoch")
+            trend = " -> ".join(("*" if i == be else "") + f"{x:.4f}"
+                                for i, x in enumerate(h))
+            tail = f"   (* = tot nhat, epoch {be}" if be is not None else "   ("
+            tail += f"; DUNG SOM o epoch {st})" if st is not None else ")"
+            print()
+            print(f"  val theo epoch [{k[1]} r={k[2]}]: {trend}{tail}")
 
 print("\nGhi chu: 'gop_ms' la forward sau merge — bang chung cho zero-overhead luc deploy.")
 print("val loss KHONG co label smoothing, nen so sanh duoc voi perplexity.")
