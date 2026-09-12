@@ -63,20 +63,6 @@ Two things worth reading off this table beyond the headline:
   and at rank 1 S-LoRA *loses* to LoRA. This is a low-budget instrument, not a universal
   replacement.
 
-### A negative result, on the record
-
-Llama-3.2-1B on Commonsense-170K (40K sample, 3 epochs, 8-task average) went the other way:
-
-| Config       | Trainable | Avg accuracy |
-|--------------|----------:|-------------:|
-| S-LoRA r=4   |   0.131 M |        49.52 |
-| S-LoRA r=10  |   0.328 M |        45.08 |
-| LoRA r=4     |   0.328 M |    **60.73** |
-
-At matched budget S-LoRA loses by 15.65 points, and — unlike on E2E — gets *worse* as rank
-grows. Model and task both changed relative to the Qwen experiment, so the cause is not
-isolated. Single seed. Code kept in `finetune_commonsense.py` so this can be rerun.
-
 ### VeRA as a baseline
 
 VeRA needs a learning rate ~500× higher than LoRA (its trainable objects are two vectors,
