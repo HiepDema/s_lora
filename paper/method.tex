@@ -1,0 +1,166 @@
+% ============================================================================
+% S-LoRA — cong thuc toan cua phan Method.
+% Ky hieu khop fig_orientations.png: \overline{W} cho khoi dong bang.
+%
+% File nay TU BIEN DICH DUOC: pdflatex method.tex
+%
+% De ghep vao paper: xoa khoi PREAMBLE (den \begin{document}) va dong
+% \end{document} cuoi file, roi \input{method} tu file chinh. Cac \providecommand
+% giu nguyen duoc — chung khong ghi de dinh nghia da co.
+% Nhan dat tien to "eq:m-" nen khong dung voi nhan trong iclr_draft.tex.
+% ============================================================================
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=1in]{geometry}
+
+\providecommand{\Wb}{\overline{W}}
+\providecommand{\R}{\mathbb{R}}
+\providecommand{\rowsp}{\operatorname{row}}
+\providecommand{\colsp}{\operatorname{col}}
+
+\begin{document}
+% ==================== PREAMBLE KET THUC — phan duoi la noi dung ============
+
+\section*{S-LoRA: the factorization}
+
+% ---------------------------------------------------------------- ky hieu
+Let $W_0\in\R^{n\times m}$ with $n\neq m$, acting as $y=W_0x$, and set
+\begin{equation}
+  k=\min(n,m),\qquad a=\frac{\max(n,m)}{\min(n,m)}\ge 1,
+  \qquad nm=ak^2 .
+  \label{eq:m-notation}
+\end{equation}
+
+% ---------------------------------------------------------------- beo ngang
+\paragraph{Wide weights ($m>n$, $k=n$): split the columns.}
+With $\Pi$ a column permutation,
+\begin{equation}
+  W_0\Pi=\begin{bmatrix}W_1 & W_2\end{bmatrix},\qquad
+  W_1\in\R^{n\times(m-n)},\quad W_2\in\R^{n\times n},
+  \label{eq:m-split-wide}
+\end{equation}
+\begin{equation}
+  W_2\Wb=W_1
+  \quad\Longrightarrow\quad
+  \Wb=W_2^{-1}W_1\in\R^{n\times(m-n)},
+  \label{eq:m-solve-wide}
+\end{equation}
+\begin{equation}
+  W_0\Pi=\begin{bmatrix}W_2\Wb & W_2\end{bmatrix}
+        =W_2\begin{bmatrix}\Wb & I\end{bmatrix}.
+  \label{eq:m-wide}
+\end{equation}
+For $\Pi^{\!\top}x=[\,x_1;x_2\,]$ with $x_1\in\R^{m-n}$, $x_2\in\R^{n}$,
+\begin{equation}
+  W_0x=W_1x_1+W_2x_2=W_2\!\left(\Wb x_1+x_2\right).
+  \label{eq:m-fwd-wide}
+\end{equation}
+
+% ---------------------------------------------------------------- cao doc
+\paragraph{Tall weights ($m<n$, $k=m$): split the rows.}
+With $\Pi$ a row permutation,
+\begin{equation}
+  \Pi W_0=\begin{bmatrix}W_1\\ W_2\end{bmatrix},\qquad
+  W_1\in\R^{(n-m)\times m},\quad W_2\in\R^{m\times m},
+  \label{eq:m-split-tall}
+\end{equation}
+\begin{equation}
+  \Wb W_2=W_1
+  \quad\Longrightarrow\quad
+  \Wb=W_1W_2^{-1}\in\R^{(n-m)\times m},
+  \label{eq:m-solve-tall}
+\end{equation}
+\begin{equation}
+  \Pi W_0=\begin{bmatrix}\Wb W_2\\ W_2\end{bmatrix}
+        =\begin{bmatrix}\Wb\\ I\end{bmatrix}W_2,
+  \qquad
+  \Pi W_0x=\begin{bmatrix}W_1x\\ W_2x\end{bmatrix}
+          =\begin{bmatrix}\Wb\\ I\end{bmatrix}W_2x .
+  \label{eq:m-tall}
+\end{equation}
+
+% ---------------------------------------------------------------- rang buoc
+\paragraph{The constraint.}
+Write $P=[\,\Wb\mid I\,]\Pi^{\!\top}$ for $m>n$ and
+$P=\Pi^{\!\top}[\,\Wb\,;I\,]$ for $m<n$, so that $W_0=W_2P$ or $W_0=PW_2$.
+Freezing $\Wb$ and perturbing $W_2\mapsto W_2+\Delta W_2$ gives
+\begin{align}
+  m>n:\quad \Delta W&=\Delta W_2\,P
+    && \Longrightarrow\ \rowsp(\Delta W)\subseteq\rowsp(W_0),
+    \label{eq:m-row}\\
+  m<n:\quad \Delta W&=P\,\Delta W_2
+    && \Longrightarrow\ \colsp(\Delta W)\subseteq\colsp(W_0),
+    \label{eq:m-col}
+\end{align}
+since $W_2$ nonsingular gives $\rowsp(P)=\rowsp(W_2P)=\rowsp(W_0)$, and dually
+for columns. The containment holds for \emph{every} $\Delta W_2$.
+
+% ---------------------------------------------------------------- pivoted QR
+\paragraph{Choosing $\Pi$: column-pivoted QR.}
+\begin{equation}
+  W_0\Pi=Q\begin{bmatrix}R_{11} & R_{12}\end{bmatrix},\qquad
+  Q^{\!\top}Q=I,\quad R_{11}\in\R^{n\times n}\ \text{upper triangular},
+  \label{eq:m-qr}
+\end{equation}
+so that $W_2=QR_{11}$, $W_1=QR_{12}$, and the orthogonal factor cancels:
+\begin{equation}
+  \Wb=W_2^{-1}W_1=(QR_{11})^{-1}(QR_{12})=R_{11}^{-1}R_{12}.
+  \label{eq:m-qcancel}
+\end{equation}
+One triangular solve; $Q$ is never formed and no inverse is computed.
+
+% ---------------------------------------------------------------- ke toan
+\paragraph{Parameter and cost accounting.}
+Storing $\Wb$ and $W_2$ (the identity block is an index selection) costs
+\begin{equation}
+  \underbrace{k\left|m-n\right|}_{\Wb}+\underbrace{k^{2}}_{W_2}
+  =k\!\left(\left|m-n\right|+k\right)=nm ,
+  \label{eq:m-preserve}
+\end{equation}
+so the parameter count is preserved exactly. A rank-$r$ adapter whose cost
+scales with the dimensions of its host matrix costs $r(n+m)=rk(1+a)$ on $W_0$
+but $2rk$ on $W_2$, hence
+\begin{equation}
+  \frac{r(n+m)}{2rk}=\frac{1+a}{2},
+  \qquad\text{and for full fine-tuning}\qquad
+  \frac{nm}{k^{2}}=a .
+  \label{eq:m-advantage}
+\end{equation}
+
+% ---------------------------------------------------------------- LoRA han che
+\paragraph{S-LoRA as restricted LoRA.}
+With $\Delta W_2=\tfrac{\alpha}{r}BA$, $B\in\R^{k\times r}$,
+$A\in\R^{r\times k}$ and $B$ zero-initialized, \eqref{eq:m-wide} gives
+\begin{equation}
+  \Delta W=\tfrac{\alpha}{r}\,B\,(AP),
+  \qquad AP\in\R^{r\times m},
+  \label{eq:m-restricted}
+\end{equation}
+a rank-$r$ update whose down-projection is trainable but confined to
+$\rowsp(W_0)$.
+
+% ---------------------------------------------------------------- gradient
+\paragraph{Gradient view.}
+Holding $P$ fixed, $\partial L/\partial W_2=(\partial L/\partial W)P^{\!\top}$,
+so a step $\Delta W_2=-\eta\,(\partial L/\partial W)P^{\!\top}$ induces
+\begin{equation}
+  \Delta W=\Delta W_2P=-\eta\,\frac{\partial L}{\partial W}\,P^{\!\top}\!P .
+  \label{eq:m-precond}
+\end{equation}
+If $P$ had orthonormal rows, $P^{\!\top}\!P=VV^{\!\top}$ would be the orthogonal
+projector onto $\rowsp(W_0)$; with the pivoted-QR basis it projects and
+rescales.
+
+% ---------------------------------------------------------------- merge
+\paragraph{Merging.}
+Let $W_2'=W_2+\Delta W_2$ be the trained square factor. Then
+\begin{equation}
+  W=W_2'\begin{bmatrix}\Wb & I\end{bmatrix}\Pi^{\!\top}
+  \qquad\text{or}\qquad
+  W=\Pi^{\!\top}\begin{bmatrix}\Wb\\ I\end{bmatrix}W_2'
+  \label{eq:m-merge}
+\end{equation}
+recovers a single matrix of the original shape.
+
+% ==================== XOA TU DAY XUONG khi ghep vao paper =================
+\end{document}

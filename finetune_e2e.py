@@ -315,16 +315,78 @@ def trainable_state(model):
     return {n: p for n, p in model.named_parameters() if p.requires_grad}
 
 
+def make_sched(opt, steps, warm, kind):
+    """Lich lr. 'linear' giu NGUYEN cong thuc cu de tai lap duoc ket qua da chay.
+
+    Vi sao can 'constant': voi lich linear, lr ve 0 dung o epoch cuoi nen val loss
+    luon giam o do — 22/25 run cu deu co best_epoch = epoch cuoi. Do la hieu ung
+    cua lich, khong phai bang chung chua hoi tu. Muon do hoi tu that thi lr phai
+    khong doi sau warmup, luc do val theo epoch moi so sanh duoc voi nhau.
+    """
+    if kind == "constant":
+        fn = lambda s: min(1.0, s / max(warm, 1))
+    elif kind == "cosine":
+        fn = lambda s: (s / max(warm, 1) if s < warm else
+                        0.5 * (1 + math.cos(math.pi * (s - warm) / max(steps - warm, 1))))
+    else:
+        fn = lambda s: s / max(warm, 1) if s < warm else max(0.0, (steps - s) / max(steps - warm, 1))
+    return torch.optim.lr_scheduler.LambdaLR(opt, fn)
+
+
+def save_resume(path, model, opt, sched, step, ep, val_hist, train_hist, best, meta):
+    """Checkpoint DAY DU de chay tiep: tham so, optimizer, lich, lich su, va RNG.
+
+    Phai luu RNG vi make_batches() dung random.shuffle — thieu no thi thu tu batch
+    sau khi resume se khac, va run bi ngat se khong con trung voi run lien mach.
+    Phan dong bang khong luu: no sinh lai tat dinh tu W0 bang pivoted QR.
+    """
+    torch.save({
+        "trainable": {n: v.detach().cpu() for n, v in trainable_state(model).items()},
+        "opt": opt.state_dict(),
+        "sched_last": sched.last_epoch,
+        "step": step,
+        "next_epoch": ep + 1,
+        "val_hist": val_hist,
+        "train_hist": train_hist,
+        "best_val": best[0],
+        "best_epoch": best[1],
+        "best_state": None if best[2] is None else {n: v.cpu() for n, v in best[2].items()},
+        "rng_python": random.getstate(),
+        "rng_torch": torch.get_rng_state(),
+        "rng_cuda": (torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None),
+        "meta": meta,
+    }, path)
+    return os.path.getsize(path) / 2**20
+
+
+def load_resume(path, model, opt, sched, device):
+    ck = torch.load(path, map_location="cpu", weights_only=False)
+    st = trainable_state(model)
+    miss = set(st) ^ set(ck["trainable"])
+    if miss:
+        raise ValueError(f"checkpoint khong khop cau hinh, lech {len(miss)} tensor: "
+                         f"{sorted(miss)[:3]}... — kiem lai --method/--rank/--targets")
+    for n, v in ck["trainable"].items():
+        st[n].data.copy_(v.to(device))
+    opt.load_state_dict(ck["opt"])
+    sched.last_epoch = ck["sched_last"]
+    random.setstate(ck["rng_python"])
+    torch.set_rng_state(ck["rng_torch"])
+    if ck.get("rng_cuda") is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(ck["rng_cuda"])
+    return ck
+
+
 def train(model, data, val_data, tok, a):
     tp = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
     steps = math.ceil(len(data) / a.batch) * a.epochs
     warm = min(a.warmup, steps // 10)
-    sched = torch.optim.lr_scheduler.LambdaLR(
-        opt, lambda s: s / max(warm, 1) if s < warm else max(0.0, (steps - s) / max(steps - warm, 1)))
+    sched = make_sched(opt, steps, warm, a.lr_schedule)
     lossf = nn.CrossEntropyLoss(ignore_index=-100, label_smoothing=a.label_smoothing)
 
-    print(f"\n  train: {len(data)} vi du, {steps} buoc, lr={a.lr}, batch={a.batch}")
+    print(f"\n  train: {len(data)} vi du, {steps} buoc, lr={a.lr} ({a.lr_schedule}), "
+          f"batch={a.batch}")
     if str(a.device).startswith("cuda"):
         torch.cuda.reset_peak_memory_stats()
     model.train()
@@ -333,7 +395,33 @@ def train(model, data, val_data, tok, a):
     val_hist, best, val_s = [], (float("inf"), -1, None), 0.0
     bad, stopped = 0, None            # bad = so lan val khong cai thien lien tiep
     train_hist = []                   # loss tren tap train, do CUNG CACH voi val
-    for ep in range(a.epochs):
+    start_ep = 0
+
+    if a.resume:
+        ck = load_resume(a.resume, model, opt, sched, a.device)
+        step, start_ep = ck["step"], ck["next_epoch"]
+        val_hist, train_hist = ck["val_hist"], ck["train_hist"]
+        bs = ck["best_state"]
+        best = (ck["best_val"], ck["best_epoch"],
+                None if bs is None else {n: v.to(a.device) for n, v in bs.items()})
+        # get_last_lr() tra ve gia tri da cache luc khoi tao, KHONG cap nhat theo
+        # last_epoch vua gan — phai tinh lai tu lambda thi in ra moi dung.
+        lr_now = a.lr * sched.lr_lambdas[0](sched.last_epoch)
+        print(f"  RESUME tu {a.resume}: tiep tuc o epoch {start_ep}/{a.epochs}, "
+              f"buoc {step}/{steps}, lr {lr_now:.2e}, "
+              f"best val {best[0]:.4f} (epoch {best[1]})")
+        old = ck.get("meta", {})
+        if old.get("lr_schedule") and old["lr_schedule"] != a.lr_schedule:
+            print(f"  *** CANH BAO: checkpoint dung lich '{old['lr_schedule']}' nhung "
+                  f"lan nay la '{a.lr_schedule}' — duong cong se khong lien tuc.")
+        if a.lr_schedule == "linear" and old.get("epochs_planned") not in (None, a.epochs):
+            print(f"  *** CANH BAO: lich linear phu thuoc tong so epoch. Checkpoint "
+                  f"tinh theo {old['epochs_planned']} epoch, lan nay {a.epochs} -> lr "
+                  f"se nhay. Dung --lr-schedule constant neu muon chay tiep tu do.")
+        if start_ep >= a.epochs:
+            print(f"  checkpoint da chay du {a.epochs} epoch — tang --epochs de chay tiep.")
+
+    for ep in range(start_ep, a.epochs):
         for bidx in make_batches(data, a.batch):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
             ids, lab, att = ids.to(a.device), lab.to(a.device), att.to(a.device)
@@ -374,6 +462,20 @@ def train(model, data, val_data, tok, a):
             gap = f"  train {tl:.4f}  gap {vl - tl:+.4f}" if tl is not None else ""
             print(f"    [ep {ep}] val loss {vl:.4f}  ppl {math.exp(vl):.3f}{gap}  "
                   f"({time.perf_counter() - tv:.0f}s){mark}", flush=True)
+
+            if a.ckpt_every and (ep + 1) % a.ckpt_every == 0:
+                os.makedirs(a.out_dir, exist_ok=True)
+                rp = f"{a.out_dir}/{a.tag}_resume.pt"
+                # Ghi ra file tam roi doi ten: neu bi ngat giua chung thi checkpoint
+                # cu van con nguyen, khong bi cut ngang.
+                mb = save_resume(rp + ".tmp", model, opt, sched, step, ep, val_hist,
+                                 train_hist, best,
+                                 dict(model=a.model, method=a.method, rank=a.rank,
+                                      alpha=a.alpha, basis=a.basis, targets=a.targets,
+                                      seed=a.seed, lr=a.lr, lr_schedule=a.lr_schedule,
+                                      epochs_planned=a.epochs))
+                os.replace(rp + ".tmp", rp)
+                print(f"      resume ckpt -> {rp}  ({mb:.1f} MB)", flush=True)
 
             if a.patience and bad >= a.patience:
                 stopped = ep
@@ -483,6 +585,16 @@ def main():
     p.add_argument("--lr", type=float, default=None, help="mac dinh 2e-4 (PEFT) / 5e-5 (full)")
     p.add_argument("--weight-decay", type=float, default=0.01)
     p.add_argument("--warmup", type=int, default=500)
+    p.add_argument("--lr-schedule", choices=["linear", "constant", "cosine"],
+                   default="linear",
+                   help="linear = hanh vi cu (lr ve 0 o epoch cuoi). Dung 'constant' "
+                        "khi do HOI TU: lich linear lam val luon giam o epoch cuoi, "
+                        "nen khong the phan biet hoi tu that voi hieu ung cua lich.")
+    p.add_argument("--ckpt-every", type=int, default=0,
+                   help="luu checkpoint chay tiep duoc moi N epoch (0 = tat)")
+    p.add_argument("--resume", default=None,
+                   help="duong dan *_resume.pt de chay tiep. Phai dung y het "
+                        "--method/--rank/--targets/--seed cua run goc.")
     p.add_argument("--label-smoothing", type=float, default=0.1)
     p.add_argument("--max-len", type=int, default=128)
     p.add_argument("--max-train", type=int, default=None, help="cat bot tap train de thu nhanh")
