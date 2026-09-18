@@ -13,7 +13,9 @@
 # chung (mat mang, tat may) khong mat qua mot epoch.
 set -u
 
-METHOD="${1:?dung: bash run_convergence.sh {rowspace|lora}}"
+# KHONG dat { } trong thong bao cua ${1:?...}: dau } se dong som phep khai trien
+# va phan con lai bi noi vao gia tri (METHOD thanh "rowspace}").
+METHOD="${1:?dung: bash run_convergence.sh rowspace hoac lora}"
 RANK="${2:-2}"
 EPOCHS="${3:-20}"
 SEED="${4:-0}"
@@ -38,7 +40,7 @@ echo "==> $METHOD r=$RANK, $EPOCHS epoch, lr khong doi, seed $SEED"
 python -u finetune_e2e.py \
   --method "$METHOD" --rank "$RANK" --seed "$SEED" \
   --model Qwen/Qwen2.5-1.5B --target-set qwen2_kv \
-  --epochs "$EPOCHS" --lr-schedule constant \
+  --epochs "$EPOCHS" --lr-schedule constant --tf32 \
   --ckpt-every 1 --out-dir "$OUT" \
   $RESUME
 

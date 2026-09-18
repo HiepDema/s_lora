@@ -333,6 +333,28 @@ def make_sched(opt, steps, warm, kind):
     return torch.optim.lr_scheduler.LambdaLR(opt, fn)
 
 
+def load_trainable_ckpt(path, model, device):
+    """Nap tham so train duoc tu *_best.pt / *_last.pt. Tra ve meta cua checkpoint.
+
+    Phan dong bang khong nam trong checkpoint — no sinh lai tat dinh tu W0, nen
+    model phai duoc dung voi DUNG --method/--rank/--targets/--basis cua run goc.
+    Lech mot tensor nao la bao loi, khong nap im lang.
+    """
+    ck = torch.load(path, map_location="cpu", weights_only=False)
+    cur = trainable_state(model)
+    miss = set(cur) ^ set(ck["trainable"])
+    if miss:
+        raise ValueError(f"checkpoint lech {len(miss)} tensor so voi cau hinh hien tai: "
+                         f"{sorted(miss)[:3]}... — kiem --method/--rank/--targets")
+    with torch.no_grad():
+        for n, v in ck["trainable"].items():
+            cur[n].copy_(v.to(device))
+    m = ck.get("meta", {})
+    print(f"  NAP {path}: which={m.get('which','?')} epoch={m.get('epoch','?')} "
+          f"val_loss={m.get('val_loss','?')}")
+    return m
+
+
 def save_resume(path, model, opt, sched, step, ep, val_hist, train_hist, best, meta):
     """Checkpoint DAY DU de chay tiep: tham so, optimizer, lich, lich su, va RNG.
 
@@ -377,7 +399,7 @@ def load_resume(path, model, opt, sched, device):
     return ck
 
 
-def train(model, data, val_data, tok, a):
+def train(model, data, val_data, tok, a, pairs=None):
     tp = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
     steps = math.ceil(len(data) / a.batch) * a.epochs
@@ -395,6 +417,7 @@ def train(model, data, val_data, tok, a):
     val_hist, best, val_s = [], (float("inf"), -1, None), 0.0
     bad, stopped = 0, None            # bad = so lan val khong cai thien lien tiep
     train_hist = []                   # loss tren tap train, do CUNG CACH voi val
+    gen_hist = []                     # BLEU/ROUGE theo epoch neu bat --gen-every
     start_ep = 0
 
     if a.resume:
@@ -463,6 +486,14 @@ def train(model, data, val_data, tok, a):
             print(f"    [ep {ep}] val loss {vl:.4f}  ppl {math.exp(vl):.3f}{gap}  "
                   f"({time.perf_counter() - tv:.0f}s){mark}", flush=True)
 
+            if a.gen_every and pairs and (ep + 1) % a.gen_every == 0:
+                sub = pairs[:a.gen_every_max] if a.gen_every_max else pairs
+                ge = evaluate(model, tok, sub, a, f"{a.tag}_ep{ep}")
+                gen_hist.append(dict(epoch=ep, bleu=round(ge["bleu"], 2),
+                                     rouge_l=round(ge["rouge_l"], 2), n=ge["n"]))
+                val_s += ge["gen_s"]           # khong tinh vao thoi gian train
+                model.train()                  # generate() da chuyen sang eval mode
+
             if a.ckpt_every and (ep + 1) % a.ckpt_every == 0:
                 os.makedirs(a.out_dir, exist_ok=True)
                 rp = f"{a.out_dir}/{a.tag}_resume.pt"
@@ -514,6 +545,8 @@ def train(model, data, val_data, tok, a):
                    overfit_gap=round(val_hist[-1] - train_hist[-1], 4) if train_hist else None,
                    val_s=round(val_s, 1), epochs_run=len(val_hist),
                    stopped_epoch=stopped)
+        if gen_hist:
+            out["gen_hist"] = gen_hist
         if a.best_epoch and best[2] is not None and best[1] != a.epochs - 1:
             with torch.no_grad():
                 cur = trainable_state(model)
@@ -592,6 +625,21 @@ def main():
                         "nen khong the phan biet hoi tu that voi hieu ung cua lich.")
     p.add_argument("--ckpt-every", type=int, default=0,
                    help="luu checkpoint chay tiep duoc moi N epoch (0 = tat)")
+    p.add_argument("--gen-every", type=int, default=0,
+                   help="cham BLEU/ROUGE-L moi N epoch trong luc train (0 = tat). "
+                        "LUU Y: cham tren tap TEST, nen duong cong nay chi de MO TA. "
+                        "Chon epoch van phai dua vao val loss, khong duoc dua vao day.")
+    p.add_argument("--gen-every-max", type=int, default=200,
+                   help="method=gen-every: so MR toi da moi lan cham giua chung "
+                        "(cham het 630 MR moi epoch rat ton). Lan cham CUOI luon day du.")
+    p.add_argument("--eval-both", action="store_true",
+                   help="cham BLEU/ROUGE o CA epoch cuoi va epoch tot nhat (theo val "
+                        "loss). Voi lr khong doi hai cai nay thuong khac nhau. "
+                        "Khong dung chung voi --best-epoch.")
+    p.add_argument("--load-ckpt", default=None,
+                   help="chi cham diem lai mot checkpoint da luu (*_best.pt / *_last.pt), "
+                        "KHONG train. Dung de lay BLEU o epoch tot nhat sau khi run da "
+                        "ket thuc o epoch cuoi.")
     p.add_argument("--resume", default=None,
                    help="duong dan *_resume.pt de chay tiep. Phai dung y het "
                         "--method/--rank/--targets/--seed cua run goc.")
@@ -640,6 +688,12 @@ def main():
     if a.patience and not a.best_epoch:
         a.best_epoch = True          # dung som ma van lay epoch cuoi thi vo nghia
         print("  --patience keo theo --best-epoch")
+
+    if a.eval_both and a.best_epoch:
+        # --best-epoch khoi phuc best NGAY TRONG train(), nen lan cham dau se la
+        # best chu khong phai last, va --eval-both mat y nghia.
+        a.best_epoch = False
+        print("  --eval-both tat --best-epoch: cham lan luot epoch cuoi roi epoch tot nhat")
     a.dtype = torch.float32 if a.fp32_factorize else torch.float64
     if a.targets is None:
         key = a.target_set or ("qwen2_kv" if "qwen" in a.model.lower() else "gpt2")
@@ -715,10 +769,34 @@ def main():
                setup_s=round(t_setup, 1))
     if a.eval_before:
         res["before"] = evaluate(model, tok, pairs, a, tag + "_before")
-    if a.method != "none":
-        res["train"] = train(model, data, val_data, tok, a)
+    if a.load_ckpt:
+        # Chi cham diem lai mot checkpoint da luu, KHONG train. Dung de lay
+        # BLEU/ROUGE o epoch tot nhat sau khi run da ket thuc o epoch cuoi.
+        m = load_trainable_ckpt(a.load_ckpt, model, a.device)
+        res["loaded"] = {k: m.get(k) for k in ("which", "epoch", "val_loss")}
+        res["loaded"]["path"] = a.load_ckpt
+    elif a.method != "none":
+        res["train"] = train(model, data, val_data, tok, a, pairs)
         res["final_loss"] = res["train"]["final_loss"]
     res["after"] = evaluate(model, tok, pairs, a, tag)
+
+    # --- cham them o epoch tot nhat -------------------------------------------
+    # Voi lr khong doi, epoch cuoi thuong KHONG phai epoch tot nhat (S-LoRA r=2
+    # cham day o epoch 5 roi di len). Cham ca hai moi biet duong cong BLEU co
+    # bam theo val loss hay khong.
+    tr = res.get("train") or {}
+    if a.eval_both and tr.get("ckpt_best"):
+        be, last_ep = tr.get("best_epoch"), tr.get("epochs_run", 0) - 1
+        if be is not None and be != last_ep:
+            print(f"\n  === cham lai o epoch tot nhat ({be}) thay vi epoch cuoi "
+                  f"({last_ep}) ===")
+            load_trainable_ckpt(tr["ckpt_best"], model, a.device)
+            res["after_best"] = evaluate(model, tok, pairs, a, f"{tag}_bestep")
+            res["after_best"]["epoch"] = be
+            d = res["after_best"]["bleu"] - res["after"]["bleu"]
+            print(f"    BLEU o epoch tot nhat lech {d:+.2f} so voi epoch cuoi")
+        else:
+            print(f"\n  epoch tot nhat trung epoch cuoi ({be}) — khong can cham lai")
 
     # --- do tre kien truc, TACH khoi beam search ---
     # generate() phu thuoc so buoc decode can de dat EOS, nen thoi gian sinh cau
