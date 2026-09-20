@@ -31,6 +31,8 @@ TARGETS = {
     "qwen2_mlp": ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
     "qwen2_all": ["self_attn.k_proj", "self_attn.v_proj",
                   "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
+    # q_proj VUONG (1536x1536) -> chi dung duoc voi --method hybrid hoac lora
+    "qwen2_qkv": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
     # Llama dung dung ten module nhu Qwen2 -> alias cho de doc, khong phai tap moi
     "llama_kv": ["self_attn.k_proj", "self_attn.v_proj"],
     "llama_mlp": ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
@@ -276,6 +278,63 @@ def convert_rowspace(model, targets, basis="colperm", rank=0, alpha=None,
     return report
 
 
+def apply_hybrid(model, targets, rank, rank_square, alpha=None, alpha_square=None,
+                 basis="colperm", dtype=torch.float64, verbose=True):
+    """S-LoRA cho ma tran KHONG VUONG, LoRA thuong cho ma tran VUONG.
+
+    Ma tran vuong (q_proj, o_proj) khong phan ra duoc — [I|X] voi k = n = m thi
+    X rong, khong tao ra rang buoc nao. Nen chung phai dung LoRA.
+
+    Hai hang tach roi: `rank` cho phan S-LoRA (k,v), `rank_square` cho phan LoRA
+    (q). Diem chinh cua cau hinh nay la S-LoRA doi GIA TUONG DOI giua hai nhom:
+    mot bac hang tren (k,v) chi con ton 1024/lop thay vi 3584, trong khi tren q
+    van 3072 — nen cung ngan sach thi mua duoc nhieu hang o k,v hon han.
+    """
+    import time
+    report, t0 = [], time.perf_counter()
+    blocks = get_blocks(model)
+    n_sq = n_fac = 0
+    for i, block in enumerate(blocks):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            mod = getattr(parent, attr)
+            w, _ = _conv1d_style_weight(mod)
+            if w.shape[0] == w.shape[1]:                       # vuong -> LoRA
+                wrap = LoRALinear if isinstance(mod, nn.Linear) else LoRAConv1D
+                setattr(parent, attr,
+                        wrap(mod, rank_square, alpha_square or rank_square))
+                n_sq += 1
+            else:                                              # khong vuong -> S-LoRA
+                fac, orient, info = factorize_conv1d(w, basis, dtype)
+                bias = mod.bias.data if getattr(mod, "bias", None) is not None else None
+                layer = RowSpaceLinear(fac, orient, bias, mod.weight.dtype, rank, alpha)
+                info.update(layer=f"h.{i}.{name}", target=name, k=layer.k,
+                            orient=orient, shape=tuple(w.shape))
+                report.append(info)
+                setattr(parent, attr, layer)
+                n_fac += 1
+        if verbose and (i + 1) % max(1, len(blocks) // 4) == 0:
+            print(f"    {i + 1}/{len(blocks)} block  ({time.perf_counter() - t0:.0f}s)",
+                  flush=True)
+    if verbose:
+        print(f"    hybrid: {n_fac} ma tran S-LoRA (r={rank}), "
+              f"{n_sq} ma tran vuong LoRA (r={rank_square})")
+
+    for p in model.parameters():
+        p.requires_grad_(False)
+    for m in model.modules():
+        if isinstance(m, RowSpaceLinear):
+            if m.rank == 0:
+                m.C.requires_grad_(True)
+            else:
+                m.lora_down.requires_grad_(True)
+                m.lora_up.requires_grad_(True)
+        elif isinstance(m, (LoRALinear, LoRAConv1D)):
+            m.down.requires_grad_(True)
+            m.up.requires_grad_(True)
+    return report
+
+
 @torch.no_grad()
 def merge_back(model, targets):
     """Gop ve lop goc -> inference khong ton them chi phi."""
@@ -340,6 +399,8 @@ def predict_params(shapes, rank, L, method):
             s += 2 * min(o, i) * rank
         elif method == "vera":
             s += rank + o
+        elif method == "hybrid":
+            s += 2 * min(o, i) * rank if o != i else rank * (o + i)
         else:
             s += rank * (o + i)
     return s * L

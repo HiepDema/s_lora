@@ -42,8 +42,9 @@ import time
 import torch
 import torch.nn as nn
 
-from peft_generic import (TARGETS, LoRAConv1D, LoRALinear, apply_lora,
-                          apply_vera, convert_rowspace, merge_all, param_counts)
+from peft_generic import (TARGETS, LoRAConv1D, LoRALinear, apply_hybrid,
+                          apply_lora, apply_vera, convert_rowspace, merge_all,
+                          param_counts)
 from rowspace_peft import NONSQUARE, RowSpaceLinear
 
 PARQUET = "hf://datasets/tuetschek/e2e_nlg@refs%2Fconvert%2Fparquet/default"
@@ -575,6 +576,12 @@ def build_model(a):
         apply_lora(model, a.targets, a.rank, a.alpha)
     elif a.method == "vera":
         apply_vera(model, a.targets, a.rank, seed=a.seed, d_init=a.vera_d_init)
+    elif a.method == "hybrid":
+        # S-LoRA cho ma tran khong vuong, LoRA cho ma tran vuong (q_proj, o_proj)
+        print(f"  hybrid: S-LoRA r={a.rank} + LoRA r={a.rank_square} tren ma tran vuong",
+              flush=True)
+        apply_hybrid(model, a.targets, a.rank, a.rank_square, a.alpha,
+                     a.alpha_square, a.basis, a.dtype, verbose=True)
     elif a.method == "target-ft":
         # Tran tren DUNG NGHIA: train tu do chinh cac ma tran dich, khong phan ra,
         # khong LoRA. So sanh voi no cho biet rang buoc khong gian con + hang thap
@@ -600,12 +607,19 @@ def build_model(a):
 def main():
     p = argparse.ArgumentParser(description="Fine-tune GPT-2 tren E2E NLG")
     p.add_argument("--method", required=True,
-                   choices=["rowspace", "rowspace-full", "lora", "vera", "target-ft",
+                   choices=["rowspace", "rowspace-full", "lora", "vera", "hybrid",
+                            "target-ft",
                             "full", "none"])
     p.add_argument("--model", default="gpt2-medium")
     p.add_argument("--rank", type=int, default=8)
     p.add_argument("--alpha", type=float, default=None, help="mac dinh = rank")
     p.add_argument("--basis", choices=["colperm", "svd"], default="colperm")
+    p.add_argument("--rank-square", type=int, default=None,
+                   help="method=hybrid: hang LoRA dung cho ma tran VUONG (q_proj, "
+                        "o_proj). Mac dinh = --rank. Dat thap hon --rank khi muon "
+                        "don ngan sach vao cac ma tran khong vuong.")
+    p.add_argument("--alpha-square", type=float, default=None,
+                   help="method=hybrid: alpha cho phan LoRA vuong. Mac dinh = rank-square")
     p.add_argument("--vera-d-init", type=float, default=0.1,
                    help="method=vera: gia tri khoi tao vector d (paper dung 0.1)")
     p.add_argument("--match-params", action="store_true",
@@ -731,6 +745,10 @@ def main():
 
     if a.alpha is None:
         a.alpha = a.rank
+    if a.rank_square is None:
+        a.rank_square = a.rank
+    if a.alpha_square is None:
+        a.alpha_square = a.rank_square
 
     random.seed(a.seed)
     torch.manual_seed(a.seed)
@@ -826,7 +844,17 @@ def main():
                                 model=a.model, targets=",".join(a.targets),
                                 setup_s=res["setup_s"],
                                 **res["after"], **res.get("train", {}),
-                                **res.get("bench", {}))) + "\n")
+                                **res.get("bench", {}),
+                                # Long vao khoa rieng chu KHONG trai phang: after_best
+                                # dung chung ten truong voi after (bleu, rouge_l, ...)
+                                # nen trai phang se ghi de mat ket qua epoch cuoi.
+                                **({"after_best": res["after_best"]}
+                                   if "after_best" in res else {}),
+                                **({"loaded": res["loaded"]}
+                                   if "loaded" in res else {}),
+                                tf32=bool(a.tf32),
+                                lr=a.lr, lr_schedule=a.lr_schedule,
+                                epochs_planned=a.epochs)) + "\n")
     print(f"\n  ket qua -> {a.out_dir}/{tag}.json  (va them dong vao summary.jsonl)")
     print(f"  cham diem chinh thuc:  python measure_scores.py "
           f"{a.out_dir}/{tag}_refs.txt {a.out_dir}/{tag}_hyps.txt")
