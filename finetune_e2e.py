@@ -573,7 +573,8 @@ def build_model(a):
         print(f"  phan ra {a.targets} (basis={a.basis})...", flush=True)
         convert_rowspace(model, a.targets, a.basis, rank, a.alpha, a.dtype, verbose=True)
     elif a.method == "lora":
-        apply_lora(model, a.targets, a.rank, a.alpha)
+        apply_lora(model, a.targets, a.rank, a.alpha,
+                   a.rank_square, a.alpha_square)
     elif a.method == "vera":
         apply_vera(model, a.targets, a.rank, seed=a.seed, d_init=a.vera_d_init)
     elif a.method == "hybrid":
@@ -753,7 +754,9 @@ def main():
     random.seed(a.seed)
     torch.manual_seed(a.seed)
     _al = "" if a.alpha == a.rank else f"a{a.alpha:g}"
-    tag = f"{a.method}_r{a.rank}{_al}_{a.basis if 'rowspace' in a.method else 'na'}_s{a.seed}"
+    _sq = f"q{a.rank_square}" if a.rank_square != a.rank else ""
+    tag = (f"{a.method}_r{a.rank}{_sq}{_al}_"
+           f"{a.basis if 'rowspace' in a.method else 'na'}_s{a.seed}")
     a.tag = tag
     print(f"\n=== {tag} ===\nmodel={a.model}  device={a.device}  targets={a.targets}")
 

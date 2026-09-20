@@ -104,13 +104,23 @@ class LoRAConv1D(nn.Module):
         return self.base(x) + self.scale * ((x @ self.down) @ self.up)
 
 
-def apply_lora(model, targets, rank, alpha):
+def apply_lora(model, targets, rank, alpha, rank_square=None, alpha_square=None):
+    """LoRA thuong. `rank_square` cho phep dat hang RIENG cho ma tran vuong.
+
+    Can de so cong bang voi --method hybrid: hybrid tu dat hai hang khac nhau
+    cho q (vuong) va k,v (khong vuong), nen doi chung LoRA cung phai lam duoc
+    the. Mac dinh None -> mot hang cho tat ca, dung hanh vi cu.
+    """
+    rs = rank if rank_square is None else rank_square
+    als = alpha if alpha_square is None else alpha_square
     for block in get_blocks(model):
         for name in targets:
             parent, attr = resolve(block, name)
             mod = getattr(parent, attr)
+            w, _ = _conv1d_style_weight(mod)
+            r, al = (rs, als) if w.shape[0] == w.shape[1] else (rank, alpha)
             wrap = LoRALinear if isinstance(mod, nn.Linear) else LoRAConv1D
-            setattr(parent, attr, wrap(mod, rank, alpha))
+            setattr(parent, attr, wrap(mod, r, al))
     for p in model.parameters():
         p.requires_grad_(False)
     for m in model.modules():
