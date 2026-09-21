@@ -625,10 +625,81 @@ def train(model, data, val_data, tok, a, pairs=None):
 
 # =========================================================================== main
 
+def verify_factorization(model, targets, ref, tol=1e-4):
+    """So dau ra cac lop da phan ra voi ban goc. Sai la DUNG HAN, khong canh bao.
+
+    Vi sao can: mot box A10 co torch CPU hong rieng o matmul float64 — phan ra
+    chay dung duong do va tra ve rac, model bi pha ngay tu luc khoi tao, ma
+    KHONG co gi bao loi. Chi thay qua loss cao bat thuong sau ca tieng train.
+    Kiem mat mot giay, nen luon kiem.
+    """
+    from peft_generic import get_blocks, resolve
+    # TF32 chi co 10 bit mantissa -> tu no da gay sai so ~1e-3, che mat sai so
+    # that cua phan ra. Tat trong luc kiem roi tra lai nguyen trang.
+    was_tf32 = torch.backends.cuda.matmul.allow_tf32
+    torch.backends.cuda.matmul.allow_tf32 = False
+    worst, where = 0.0, None
+    for i, block in enumerate(get_blocks(model)):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            mod = getattr(parent, attr)
+            if not isinstance(mod, RowSpaceLinear):
+                continue
+            w0 = ref.get((i, name))
+            if w0 is None:
+                continue
+            d_in = w0.shape[0]
+            x = torch.randn(2, 8, d_in, dtype=mod.C.dtype if hasattr(mod, "C")
+                            else torch.float32, device=w0.device)
+            with torch.no_grad():
+                y1 = mod(x)
+                y0 = x @ w0
+                if mod.bias is not None:
+                    y0 = y0 + mod.bias
+                e = (torch.linalg.norm(y1 - y0) / torch.linalg.norm(y0)).item()
+            if e > worst:
+                worst, where = e, f"h.{i}.{name}"
+    torch.backends.cuda.matmul.allow_tf32 = was_tf32
+    if where is None:
+        return None
+    print(f"  kiem phan ra: sai so dau ra lon nhat {worst:.2e} ({where})")
+    if worst > tol:
+        msg = [
+            f"PHAN RA SAI: sai so dau ra {worst:.2e} > {tol:.0e} tai {where}.",
+            "  Nguyen nhan hay gap nhat la BLAS hong. Kiem bang:",
+            "    python -c 'import torch; N=512;"
+            " M=torch.randn(N,N,dtype=torch.float64);"
+            " print((torch.eye(N,dtype=torch.float64)@M-M).abs().max())'",
+            "  Phai ra ~0. Neu khong: dung --factorize-device cuda, hoac cai lai torch.",
+        ]
+        raise RuntimeError("\n".join(msg))
+    return worst
+
+
 def build_model(a):
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(a.model, dtype=torch.float32)
     n_orig = sum(p.numel() for p in model.parameters())
+
+    # Phan ra tren GPU neu duoc: matmul float64 tren CPU hong tren mot so box,
+    # con cuBLAS thi khong. Chuyen model len truoc roi moi phan ra.
+    fdev = getattr(a, "factorize_device", "auto")
+    if fdev == "auto":
+        fdev = a.device
+    need_fac = a.method in ("rowspace", "rowspace-full", "hybrid")
+    if need_fac and str(fdev) != "cpu":
+        model = model.to(fdev)
+        print(f"  phan ra tren {fdev}", flush=True)
+
+    ref = {}
+    if need_fac:
+        from peft_generic import get_blocks, resolve, _conv1d_style_weight
+        for i, block in enumerate(get_blocks(model)):
+            for name in a.targets:
+                parent, attr = resolve(block, name)
+                w, _ = _conv1d_style_weight(getattr(parent, attr))
+                if w.shape[0] != w.shape[1]:        # chi luu ma tran se phan ra
+                    ref[(i, name)] = w.clone()
 
     if a.method in ("rowspace", "rowspace-full"):
         rank = 0 if a.method == "rowspace-full" else a.rank
@@ -663,6 +734,9 @@ def build_model(a):
     elif a.method == "none":
         for p in model.parameters():
             p.requires_grad_(False)
+
+    if need_fac and ref:
+        verify_factorization(model, a.targets, ref)
 
     if a.grad_ckpt:
         # Base dong bang -> moi dau vao cua doan duoc checkpoint deu khong can
@@ -759,6 +833,9 @@ def main():
     p.add_argument("--bench-iters", type=int, default=20)
     p.add_argument("--no-bench", action="store_true",
                    help="bo qua phan do do tre kien truc")
+    p.add_argument("--factorize-device", default="auto",
+                   help="noi chay phan ra: auto (= --device), cuda, hoac cpu. "
+                        "Mac dinh GPU vi matmul float64 tren CPU hong tren mot so box.")
     p.add_argument("--fp32-factorize", action="store_true",
                    help="phan ra o fp32 thay vi fp64")
     p.add_argument("--seed", type=int, default=0)
