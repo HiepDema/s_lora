@@ -119,9 +119,128 @@ def extract_gold(ans):
     return _norm(m.group(1)) if m else None
 
 
+# --------------------------------------------------------------------- MATH
+
+MATH_SUBS = ["algebra", "counting_and_probability", "geometry",
+             "intermediate_algebra", "number_theory", "prealgebra", "precalculus"]
+
+
+def load_math():
+    """MATH test day du, 5000 bai qua 7 chu de.
+
+    Vi sao khong dung MATH-500: n=500 cho sd ~2.0% o p=0.3, con TE HON GSM8K
+    (1319 bai, sd 1.1%). Ca bo 5000 moi xuong 0.65%.
+    """
+    from datasets import load_dataset
+    out = []
+    for s in MATH_SUBS:
+        d = load_dataset("EleutherAI/hendrycks_math", s, split="test")
+        out += [(r["problem"], r["solution"]) for r in d]
+    return out
+
+
+def last_boxed(s):
+    """Noi dung \\boxed{...} cuoi cung, ghep cap ngoac dung."""
+    i = max(s.rfind("\\boxed"), s.rfind("\\fbox"))
+    if i < 0:
+        return None
+    j = s.find("{", i)
+    if j < 0:
+        return None
+    depth = 0
+    for k in range(j, len(s)):
+        if s[k] == "{":
+            depth += 1
+        elif s[k] == "}":
+            depth -= 1
+            if depth == 0:
+                return s[j + 1:k]
+    return None
+
+
+def norm_math(s):
+    """Chuan hoa bieu thuc LaTeX truoc khi so khop.
+
+    Theo thong le cua cac bo eval MATH (Hendrycks, Minerva): bo don vi va
+    \\text, gop \\dfrac/\\tfrac ve \\frac, bo khoang trang va ky hieu trang tri.
+    Khong hoan hao — vd khong nhan ra (x+1)^2 = x^2+2x+1 — nhung la chuan chung.
+    """
+    if s is None:
+        return None
+    s = s.strip()
+    # \text{...} thuong la don vi do ("2\text{ cm}") nen phai XOA. Nhung doi khi
+    # chinh no la dap an ("\text{even}") — luc do xoa se thanh rong, giu lai noi
+    # dung thay vi xoa.
+    stripped = re.sub(r"\\(?:text|mbox|textbf|mathrm)\{[^{}]*\}", "", s).strip()
+    s = stripped if stripped else re.sub(
+        r"\\(?:text|mbox|textbf|mathrm)\{([^{}]*)\}", r"\1", s)
+    for a, b in (("\\left", ""), ("\\right", ""), ("\\!", ""), ("\\,", ""),
+                 ("\\;", ""), ("\\:", ""), ("\\ ", ""), ("\\$", ""), ("$", ""),
+                 ("\\dfrac", "\\frac"), ("\\tfrac", "\\frac"),
+                 ("^{\\circ}", ""), ("^\\circ", ""), ("\\%", ""), ("%", ""),
+                 ("\\cdot", "*"), (" ", ""), (",", "")):
+        s = s.replace(a, b)
+    s = s.rstrip(".")
+    while s.startswith("{") and s.endswith("}"):
+        s = s[1:-1]
+    m = re.fullmatch(r"(-?\d+)/(-?\d+)", s)         # a/b -> \frac{a}{b}
+    if m:
+        s = "\\frac{%s}{%s}" % (m.group(1), m.group(2))
+    if s.startswith("."):
+        s = "0" + s
+    return s
+
+
+def _to_float(s):
+    """Doi bieu thuc don gian ve so: nguyen, thap phan, hoac \\frac{a}{b}."""
+    if s is None:
+        return None
+    v = _norm(s)
+    if v is not None:
+        return v
+    m = re.fullmatch(r"\\frac\{(-?\d+(?:\.\d+)?)\}\{(-?\d+(?:\.\d+)?)\}", s)
+    if m:
+        try:
+            den = float(m.group(2))
+            return float(m.group(1)) / den if den else None
+        except ValueError:
+            return None
+    return None
+
+
+def math_equal(pred, gold):
+    """Khop chuoi sau chuan hoa, hoac khop so neu ca hai quy duoc ve so."""
+    p, g = norm_math(pred), norm_math(gold)
+    if p is None or g is None:
+        return False
+    if p == g:
+        return True
+    fp, fg = _to_float(p), _to_float(g)
+    return fp is not None and fg is not None and abs(fp - fg) < 1e-6
+
+
+def extract_pred_math(text):
+    """Dap an model sinh ra cho bai MATH: uu tien 'The answer is:', roi \\boxed."""
+    m = re.search(r"[Tt]he answer is:?\s*(.+?)(?:\n|$)", text)
+    if m:
+        v = m.group(1).strip().rstrip(".")
+        b = last_boxed(v)
+        return b if b is not None else v
+    return last_boxed(text)
+
+
 @torch.no_grad()
-def evaluate(model, tok, tests, a, tag):
-    """Sinh tham lam roi khop dung dap an. Tra ve accuracy."""
+def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
+    """Sinh tham lam roi khop dung dap an. Tra ve accuracy.
+
+    kind='gsm8k': dap an la so, so sanh bang float.
+    kind='math' : dap an la bieu thuc LaTeX, so sanh sau chuan hoa.
+    """
+    is_math = kind == "math"
+    getp = extract_pred_math if is_math else extract_pred
+    getg = last_boxed if is_math else extract_gold
+    same = math_equal if is_math else (
+        lambda p, g: p is not None and g is not None and abs(p - g) < 1e-4)
     was = model.training
     model.eval()
     tok.padding_side = "left"
@@ -137,8 +256,8 @@ def evaluate(model, tok, tests, a, tag):
                              pad_token_id=tok.eos_token_id)
         for j, (q, gold) in enumerate(chunk):
             gen = tok.decode(out[j, enc.input_ids.shape[1]:], skip_special_tokens=True)
-            p, g = extract_pred(gen), extract_gold(gold)
-            ok = p is not None and g is not None and abs(p - g) < 1e-4
+            p, g = getp(gen), getg(gold)
+            ok = same(p, g)
             hit += ok
             n += 1
             recs.append({"q": q, "gen": gen, "pred": p, "gold": g, "ok": bool(ok)})
@@ -149,6 +268,7 @@ def evaluate(model, tok, tests, a, tag):
     model.train(was)
     acc = 100 * hit / max(n, 1)
     os.makedirs(a.out_dir, exist_ok=True)
+    name = "MATH" if is_math else "GSM8K"
     with open(f"{a.out_dir}/{tag}_gen.jsonl", "w", encoding="utf-8") as f:
         for r in recs:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -157,7 +277,8 @@ def evaluate(model, tok, tests, a, tag):
     nofmt = sum(1 for r in recs if r["pred"] is None)
     if nofmt:
         print(f"    canh bao: {nofmt} cau khong trich duoc so nao ({100*nofmt/n:.1f}%)")
-    return dict(acc=acc, hit=hit, n=n, gen_s=round(el, 1), unparsed=nofmt)
+    return dict(acc=acc, hit=hit, n=n, gen_s=round(el, 1), unparsed=nofmt,
+                benchmark=name)
 
 
 # =========================================================================== main
@@ -203,6 +324,12 @@ def main():
     p.add_argument("--limit-eval", type=int, default=None,
                    help="gioi han so bai GSM8K (mac dinh chay het 1319)")
     p.add_argument("--eval-before", action="store_true", help="do zero-shot truoc")
+    p.add_argument("--eval-math", action="store_true",
+                   help="cham them tren MATH test day du (5000 bai). Nhieu thap hon "
+                        "GSM8K (sd 0.65%% so voi 1.10%%) va du dia rong hon nhieu.")
+    p.add_argument("--skip-gsm8k", action="store_true",
+                   help="bo qua GSM8K, chi cham MATH")
+    p.add_argument("--limit-math", type=int, default=None)
 
     p.add_argument("--val-every", type=int, default=1)
     p.add_argument("--val-max", type=int, default=500)
@@ -266,11 +393,17 @@ def main():
     val_rows, train_rows = rows[:nval], rows[nval:]
     data = encode_train(train_rows, tok, a.max_len)
     val_data = None if a.no_val else encode_train(val_rows, tok, a.max_len)
-    tests = load_gsm8k()
+    tests = [] if a.skip_gsm8k else load_gsm8k()
     if a.limit_eval:
         tests = tests[:a.limit_eval]
+    mtests = []
+    if a.eval_math:
+        print("  nap MATH test...", flush=True)
+        mtests = load_math()
+        if a.limit_math:
+            mtests = mtests[:a.limit_math]
     print(f"  train {len(data)} | val {len(val_data) if val_data else 0} "
-          f"| GSM8K test {len(tests)}")
+          f"| GSM8K {len(tests)} | MATH {len(mtests)}")
 
     t0 = time.perf_counter()
     model, info = E.build_model(a)
@@ -281,13 +414,20 @@ def main():
     res = dict(tag=tag, config=vars(a) | {"device": str(a.device), "dtype": str(a.dtype)},
                params=info, setup_s=round(time.perf_counter() - t0, 1))
     if a.eval_before:
-        res["before"] = evaluate(model, tok, tests, a, tag + "_zeroshot")
+        if tests:
+            res["before"] = evaluate(model, tok, tests, a, tag + "_zeroshot")
+        if mtests:
+            res["before_math"] = evaluate(model, tok, mtests, a,
+                                          tag + "_zeroshot_math", kind="math")
     if a.load_ckpt:
         res["loaded"] = E.load_trainable_ckpt(a.load_ckpt, model, a.device)
     elif a.method != "none":
         res["train"] = E.train(model, data, val_data, tok, a)     # pairs=None
         res["final_loss"] = res["train"]["final_loss"]
-    res["after"] = evaluate(model, tok, tests, a, tag)
+    if tests:
+        res["after"] = evaluate(model, tok, tests, a, tag)
+    if mtests:
+        res["after_math"] = evaluate(model, tok, mtests, a, tag + "_math", kind="math")
 
     tr = res.get("train") or {}
     if a.eval_both and tr.get("ckpt_best"):
@@ -295,10 +435,15 @@ def main():
         if be is not None and be != last:
             print(f"\n  === cham lai o epoch tot nhat ({be}) ===")
             E.load_trainable_ckpt(tr["ckpt_best"], model, a.device)
-            res["after_best"] = evaluate(model, tok, tests, a, f"{tag}_bestep")
-            res["after_best"]["epoch"] = be
-            print(f"    accuracy lech {res['after_best']['acc']-res['after']['acc']:+.2f} "
-                  f"diem so voi epoch cuoi")
+            if tests:
+                res["after_best"] = evaluate(model, tok, tests, a, f"{tag}_bestep")
+                res["after_best"]["epoch"] = be
+                print(f"    GSM8K lech "
+                      f"{res['after_best']['acc']-res['after']['acc']:+.2f} diem")
+            if mtests:
+                res["after_best_math"] = evaluate(model, tok, mtests, a,
+                                                  f"{tag}_bestep_math", kind="math")
+                res["after_best_math"]["epoch"] = be
 
     os.makedirs(a.out_dir, exist_ok=True)
     with open(f"{a.out_dir}/{tag}.json", "w", encoding="utf-8") as f:
@@ -311,7 +456,10 @@ def main():
             targets=",".join(a.targets), dataset="metamathqa->gsm8k",
             max_train=a.max_train, only_gsm=a.only_gsm, tf32=bool(a.tf32),
             lr=a.lr, lr_schedule=a.lr_schedule, epochs_planned=a.epochs,
-            setup_s=res["setup_s"], **res["after"], **res.get("train", {}),
+            setup_s=res["setup_s"], **res.get("after", {}), **res.get("train", {}),
+            **({"after_math": res["after_math"]} if "after_math" in res else {}),
+            **({"before": res["before"]} if "before" in res else {}),
+            **({"before_math": res["before_math"]} if "before_math" in res else {}),
             **({"after_best": res["after_best"]} if "after_best" in res else {}),
         ), default=str) + "\n")
     print(f"\n  ket qua -> {a.out_dir}/{tag}.json")
