@@ -465,8 +465,10 @@ def load_resume(path, model, opt, sched, device):
 def train(model, data, val_data, tok, a, pairs=None):
     tp = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
-    steps = math.ceil(len(data) / a.batch) * a.epochs
-    warm = min(a.warmup, steps // 10)
+    _accum = max(1, getattr(a, 'accum', 1))
+    steps = math.ceil(math.ceil(len(data) / a.batch) / _accum) * a.epochs
+    warm = (int(a.warmup_ratio * steps) if getattr(a, 'warmup_ratio', 0)
+            else min(a.warmup, steps // 10))
     sched = make_sched(opt, steps, warm, a.lr_schedule)
     lossf = nn.CrossEntropyLoss(ignore_index=-100, label_smoothing=a.label_smoothing)
 
@@ -507,18 +509,23 @@ def train(model, data, val_data, tok, a, pairs=None):
         if start_ep >= a.epochs:
             print(f"  checkpoint da chay du {a.epochs} epoch — tang --epochs de chay tiep.")
 
+    accum = max(1, getattr(a, "accum", 1))
     for ep in range(start_ep, a.epochs):
-        for bidx in make_batches(data, a.batch):
+        for mi, bidx in enumerate(make_batches(data, a.batch)):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
             ids, lab, att = ids.to(a.device), lab.to(a.device), att.to(a.device)
             logits = model(input_ids=ids, attention_mask=att).logits
             loss = lossf(logits[:, :-1].reshape(-1, logits.shape[-1]), lab[:, 1:].reshape(-1))
-            loss.backward()
+            # Chia cho accum de tong gradient bang trung binh, khong phai tong.
+            (loss / accum).backward()
+            raw = loss.item()
+            if (mi + 1) % accum:                  # chua du mot buoc that
+                continue
             torch.nn.utils.clip_grad_norm_(tp, 1.0)
             opt.step()
             sched.step()
             opt.zero_grad(set_to_none=True)
-            run = loss.item() if run is None else 0.98 * run + 0.02 * loss.item()
+            run = raw if run is None else 0.98 * run + 0.02 * raw
             step += 1
             if step % a.log_every == 0:
                 el = time.perf_counter() - t0
@@ -781,6 +788,11 @@ def main():
     p.add_argument("--lr", type=float, default=None, help="mac dinh 2e-4 (PEFT) / 5e-5 (full)")
     p.add_argument("--weight-decay", type=float, default=0.01)
     p.add_argument("--warmup", type=int, default=500)
+    p.add_argument("--warmup-ratio", type=float, default=0.0,
+                   help="ty le warmup theo tong so buoc; khac 0 thi ghi de --warmup")
+    p.add_argument("--accum", type=int, default=1,
+                   help="gradient accumulation. Batch hieu dung = --batch * --accum. "
+                        "Can de khop batch 128 cua PMSS khi VRAM chi chua duoc 8.")
     p.add_argument("--lr-schedule", choices=["linear", "constant", "cosine"],
                    default="linear",
                    help="linear = hanh vi cu (lr ve 0 o epoch cuoi). Dung 'constant' "

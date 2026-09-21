@@ -35,6 +35,10 @@ TARGETS = {
     "qwen2_qkv": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
     # Llama dung dung ten module nhu Qwen2 -> alias cho de doc, khong phai tap moi
     "llama_kv": ["self_attn.k_proj", "self_attn.v_proj"],
+    # Ca 7 lop tuyen tinh — thiet lap cua PiSSA/PMSS. Ten module giong nhau o
+    # Llama, Mistral va Qwen2 nen mot tap dung duoc cho ca ba.
+    "all7": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj",
+             "self_attn.o_proj", "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
     "llama_mlp": ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"],
 }
 

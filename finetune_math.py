@@ -273,7 +273,7 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
         for r in recs:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     el = time.perf_counter() - t0
-    print(f"\n    [{tag}]  GSM8K accuracy = {acc:.2f}%  ({hit}/{n}, {el:.0f}s)")
+    print(f"\n    [{tag}]  {name} accuracy = {acc:.2f}%  ({hit}/{n}, {el:.0f}s)")
     nofmt = sum(1 for r in recs if r["pred"] is None)
     if nofmt:
         print(f"    canh bao: {nofmt} cau khong trich duoc so nao ({100*nofmt/n:.1f}%)")
@@ -312,6 +312,9 @@ def main():
                    default="linear")
     p.add_argument("--weight-decay", type=float, default=0.01)
     p.add_argument("--warmup", type=int, default=500)
+    p.add_argument("--warmup-ratio", type=float, default=0.0)
+    p.add_argument("--accum", type=int, default=1,
+                   help="gradient accumulation; batch hieu dung = --batch * --accum")
     p.add_argument("--label-smoothing", type=float, default=0.0,
                    help="0 cho toan hoc: dap an la mot chuoi so xac dinh, lam mem "
                         "nhan chi them nhieu")
