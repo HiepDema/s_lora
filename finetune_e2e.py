@@ -59,6 +59,68 @@ def load_e2e(cache_dir=None):
     return load_dataset("parquet", data_files=files, cache_dir=cache_dir)
 
 
+DART = ("https://raw.githubusercontent.com/Yale-LILY/dart/master/data/v1.1.1/"
+        "dart-v1.1.1-full-{split}.json")
+
+
+def _lin(tripleset):
+    """Tuyen tinh hoa tap triple: 'subj : REL : obj | subj : REL : obj'."""
+    return " | ".join(" : ".join(t) for t in tripleset)
+
+
+def load_dart(cache_dir="dart_cache"):
+    """DART (Nan et al. 2021) tu nguon GitHub goc.
+
+    KHONG dung datasets.load_dataset: ca GEM/dart lan dart deu la script-based,
+    ma datasets 3.x tro di da bo ho tro script -> khong nap duoc.
+
+    Tra ve dict cung dang voi load_e2e (hai cot meaning_representation /
+    human_reference), nen encode_train() va group_refs() dung lai nguyen ven.
+    Moi (tripleset, annotation) la mot dong; group_refs() gom lai theo tripleset
+    nen test tu dong co nhieu reference moi input — trung binh 2.46.
+    """
+    import urllib.request
+    os.makedirs(cache_dir, exist_ok=True)
+    out = {}
+    for split, key in (("train", "train"), ("dev", "validation"), ("test", "test")):
+        p = os.path.join(cache_dir, f"dart-{split}.json")
+        if not os.path.exists(p):
+            print(f"    tai DART {split}...", flush=True)
+            urllib.request.urlretrieve(DART.format(split=split), p)
+        with open(p, encoding="utf-8") as f:
+            rows = json.load(f)
+        mr, hr = [], []
+        for it in rows:
+            src = _lin(it["tripleset"])
+            for ann in it["annotations"]:
+                t = ann["text"].strip()
+                if src and t:
+                    mr.append(src)
+                    hr.append(t)
+        out[key] = {"meaning_representation": mr, "human_reference": hr}
+    return out
+
+
+class _Rows(dict):
+    """Du de encode_train/group_refs dung: ho tro ds[col] va .select(range(n))."""
+
+    def select(self, idx):
+        idx = list(idx)
+        return _Rows({k: [v[i] for i in idx] for k, v in self.items()})
+
+    def __len__(self):
+        return len(next(iter(self.values())))
+
+
+def load_split(name):
+    """Tra ve (train, validation, test) da chuan hoa ve hai cot chung."""
+    if name == "dart":
+        d = load_dart()
+        return tuple(_Rows(d[k]) for k in ("train", "validation", "test"))
+    ds = load_e2e()
+    return ds["train"], ds["validation"], ds["test"]
+
+
 def encode_train(ds, tok, max_len):
     """Moi vi du: '<mr> ||| <ref><eos>', loss CHI tinh tren phan <ref>."""
     out = []
@@ -602,6 +664,15 @@ def build_model(a):
         for p in model.parameters():
             p.requires_grad_(False)
 
+    if a.grad_ckpt:
+        # Base dong bang -> moi dau vao cua doan duoc checkpoint deu khong can
+        # grad, backward se khong sinh gradient nao. enable_input_require_grads()
+        # bat embedding yeu cau grad de chuoi khong bi dut. Thieu dong nay la
+        # loss.backward() chay nhung tham so khong nhuc nhich.
+        model.gradient_checkpointing_enable()
+        model.enable_input_require_grads()
+        model.config.use_cache = False
+        print("  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)")
     return model.to(a.device), param_counts(model, n_orig)
 
 
@@ -612,6 +683,9 @@ def main():
                             "target-ft",
                             "full", "none"])
     p.add_argument("--model", default="gpt2-medium")
+    p.add_argument("--dataset", choices=["e2e", "dart"], default="e2e",
+                   help="dart: dai hon va kho hon E2E (input p50 29 tu so voi 8, "
+                        "5097 muc test voi 2.46 reference/muc). Nho tang --max-len.")
     p.add_argument("--rank", type=int, default=8)
     p.add_argument("--alpha", type=float, default=None, help="mac dinh = rank")
     p.add_argument("--basis", choices=["colperm", "svd"], default="colperm")
@@ -691,6 +765,9 @@ def main():
     p.add_argument("--log-every", type=int, default=100)
     p.add_argument("--out-dir", default="runs")
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    p.add_argument("--grad-ckpt", action="store_true",
+                   help="gradient checkpointing: giam VRAM ~40%, cham ~30%. Can cho "
+                        "model >=7B tren GPU 40GB. La MOT BIEN MOI so voi ket qua cu.")
     p.add_argument("--tf32", action="store_true",
                    help="bat TF32 cho matmul (A10): nhanh ~2-3x, mantissa 10 bit. "
                         "Ap dung nhu nhau cho ca hai nhanh nen van cong bang.")
@@ -766,13 +843,12 @@ def main():
         tok.pad_token = tok.eos_token
 
     print("  nap E2E NLG...")
-    ds = load_e2e()
-    train_rows = ds["train"]
+    tr_rows, va_rows, te_rows = load_split(a.dataset)
     if a.max_train:
-        train_rows = train_rows.select(range(min(a.max_train, len(train_rows))))
-    data = encode_train(train_rows, tok, a.max_len)
-    val_data = None if a.no_val else encode_train(ds["validation"], tok, a.max_len)
-    pairs = group_refs(ds["test"])
+        tr_rows = tr_rows.select(range(min(a.max_train, len(tr_rows))))
+    data = encode_train(tr_rows, tok, a.max_len)
+    val_data = None if a.no_val else encode_train(va_rows, tok, a.max_len)
+    pairs = group_refs(te_rows)
     if a.limit_eval:
         pairs = pairs[:a.limit_eval]
     print(f"  train {len(data)} vi du | val {len(val_data) if val_data else 0} "
@@ -855,7 +931,7 @@ def main():
                                    if "after_best" in res else {}),
                                 **({"loaded": res["loaded"]}
                                    if "loaded" in res else {}),
-                                tf32=bool(a.tf32),
+                                dataset=a.dataset, tf32=bool(a.tf32),
                                 lr=a.lr, lr_schedule=a.lr_schedule,
                                 epochs_planned=a.epochs)) + "\n")
     print(f"\n  ket qua -> {a.out_dir}/{tag}.json  (va them dong vao summary.jsonl)")
