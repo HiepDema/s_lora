@@ -350,6 +350,7 @@ def main():
     p.add_argument("--gen-every-max", type=int, default=200)
 
     p.add_argument("--grad-ckpt", action="store_true")
+    p.add_argument("--fac-cache", default=None)
     p.add_argument("--tf32", action="store_true")
     p.add_argument("--fp32-factorize", action="store_true")
     p.add_argument("--no-bench", action="store_true")

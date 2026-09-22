@@ -22,7 +22,7 @@ import math
 import torch
 import torch.nn as nn
 
-from rowspace_peft import RowSpaceLinear, factorize_conv1d
+from rowspace_peft import RowSpaceLinear, factorize_cached, factorize_conv1d
 
 # --- tap ma tran dich theo kien truc -----------------------------------------
 TARGETS = {
@@ -258,7 +258,7 @@ class RowSpaceLinearWrap(RowSpaceLinear):
 
 
 def convert_rowspace(model, targets, basis="colperm", rank=0, alpha=None,
-                     dtype=torch.float64, verbose=True):
+                     dtype=torch.float64, verbose=True, cache=None):
     """Phan ra cac lop dich; dong bang tat ca tru phan train duoc."""
     import time
     report, t0 = [], time.perf_counter()
@@ -270,7 +270,8 @@ def convert_rowspace(model, targets, basis="colperm", rank=0, alpha=None,
             w, is_lin = _conv1d_style_weight(mod)
             if w.shape[0] == w.shape[1]:
                 raise ValueError(f"h.{i}.{name} vuong {tuple(w.shape)} — bo khoi targets")
-            fac, orient, info = factorize_conv1d(w, basis, dtype)
+            cp = f"{cache}/{name}.{i}.{basis}.pt" if cache else None
+            fac, orient, info = factorize_cached(w, basis, dtype, cp)
             bias = mod.bias.data if getattr(mod, "bias", None) is not None else None
             layer = RowSpaceLinear(fac, orient, bias, mod.weight.dtype, rank, alpha)
             info.update(layer=f"h.{i}.{name}", target=name, k=layer.k,
@@ -293,7 +294,7 @@ def convert_rowspace(model, targets, basis="colperm", rank=0, alpha=None,
 
 
 def apply_hybrid(model, targets, rank, rank_square, alpha=None, alpha_square=None,
-                 basis="colperm", dtype=torch.float64, verbose=True):
+                 basis="colperm", dtype=torch.float64, verbose=True, cache=None):
     """S-LoRA cho ma tran KHONG VUONG, LoRA thuong cho ma tran VUONG.
 
     Ma tran vuong (q_proj, o_proj) khong phan ra duoc — [I|X] voi k = n = m thi
@@ -319,7 +320,8 @@ def apply_hybrid(model, targets, rank, rank_square, alpha=None, alpha_square=Non
                         wrap(mod, rank_square, alpha_square or rank_square))
                 n_sq += 1
             else:                                              # khong vuong -> S-LoRA
-                fac, orient, info = factorize_conv1d(w, basis, dtype)
+                cp = f"{cache}/{name}.{i}.{basis}.pt" if cache else None
+                fac, orient, info = factorize_cached(w, basis, dtype, cp)
                 bias = mod.bias.data if getattr(mod, "bias", None) is not None else None
                 layer = RowSpaceLinear(fac, orient, bias, mod.weight.dtype, rank, alpha)
                 info.update(layer=f"h.{i}.{name}", target=name, k=layer.k,

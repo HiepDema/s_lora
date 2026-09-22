@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import math
 import statistics as st
+import os
 import sys
 import time
 
@@ -135,6 +136,59 @@ def factorize_conv1d(weight, basis, dtype=torch.float64):
 
     info = {k: v for k, v in f.items() if isinstance(v, float)}
     info["res"] = (torch.linalg.norm(recon - W) / torch.linalg.norm(W)).item()
+    return f, orient, info
+
+
+def _rebuild(W, sel, rest, orient):
+    """Dung lai (W2, X) tu pivot bang mot phep GIAI HE, khong chay lai QR.
+
+    beo ngang: W[:,sel] = W2,  W[:,rest] = W2 @ X   -> X = W2^-1 W[:,rest]
+    cao doc  : W[sel,:] = W2,  W[rest,:] = X @ W2   -> X = W[rest,:] W2^-1
+    """
+    if orient == "pre":
+        W2 = W[:, sel].contiguous()
+        X = torch.linalg.solve(W2, W[:, rest])
+    else:
+        W2 = W[sel, :].contiguous()
+        X = torch.linalg.solve(W2.T, W[rest, :].T).T
+    return W2, X.contiguous()
+
+
+def factorize_cached(weight, basis, dtype, cache_path):
+    """factorize_conv1d nhung luu/doc lai PIVOT.
+
+    Pivoted QR chiem gan het thoi gian — do tren Mistral-7B ca 7 lop la 111 phut
+    moi run, nhieu hon ca thoi gian train. Pivot la phan tat dinh duy nhat can
+    giu; X va W2 dung lai tu do bang mot phep giai he k x k, tren GPU gan nhu
+    tuc thi. Luu thang X se ton ~32 GB, luu pivot chi ton ~25 MB.
+
+    cache_path = None -> hanh vi cu, khong cache.
+    """
+    if not cache_path or basis != "colperm":
+        return factorize_conv1d(weight, basis, dtype)
+
+    d_in, d_out = weight.shape
+    if d_in == d_out:
+        raise ValueError("ma tran vuong: phan ra khong tao ra rang buoc nao")
+    W = weight.T.to(dtype)
+    n, m = W.shape
+    orient = "pre" if m > n else "post"
+
+    if os.path.exists(cache_path):
+        z = torch.load(cache_path, map_location="cpu", weights_only=True)
+        sel = z["sel"].to(W.device)
+        rest = z["rest"].to(W.device)
+        W2, X = _rebuild(W, sel, rest, orient)
+        f = dict(kind="struct", W2=W2, X=X, sel=sel, rest=rest,
+                 maxX=X.abs().max().item(), condW2=float("nan"))
+        return f, orient, dict(res=float("nan"), cached=1.0)
+
+    f, orient, info = factorize_conv1d(weight, basis, dtype)
+    os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
+    tmp = cache_path + ".tmp"
+    torch.save({"sel": f["sel"].cpu(), "rest": f["rest"].cpu()}, tmp)
+    os.replace(tmp, cache_path)         # doi ten de ngat giua chung khong hong cache
+    info["cached"] = 0.0
     return f, orient, info
 
 

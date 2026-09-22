@@ -711,7 +711,8 @@ def build_model(a):
     if a.method in ("rowspace", "rowspace-full"):
         rank = 0 if a.method == "rowspace-full" else a.rank
         print(f"  phan ra {a.targets} (basis={a.basis})...", flush=True)
-        convert_rowspace(model, a.targets, a.basis, rank, a.alpha, a.dtype, verbose=True)
+        convert_rowspace(model, a.targets, a.basis, rank, a.alpha, a.dtype,
+                         verbose=True, cache=a.fac_cache)
     elif a.method == "lora":
         apply_lora(model, a.targets, a.rank, a.alpha,
                    a.rank_square, a.alpha_square)
@@ -722,7 +723,8 @@ def build_model(a):
         print(f"  hybrid: S-LoRA r={a.rank} + LoRA r={a.rank_square} tren ma tran vuong",
               flush=True)
         apply_hybrid(model, a.targets, a.rank, a.rank_square, a.alpha,
-                     a.alpha_square, a.basis, a.dtype, verbose=True)
+                     a.alpha_square, a.basis, a.dtype, verbose=True,
+                     cache=a.fac_cache)
     elif a.method == "target-ft":
         # Tran tren DUNG NGHIA: train tu do chinh cac ma tran dich, khong phan ra,
         # khong LoRA. So sanh voi no cho biet rang buoc khong gian con + hang thap
@@ -845,6 +847,10 @@ def main():
     p.add_argument("--bench-iters", type=int, default=20)
     p.add_argument("--no-bench", action="store_true",
                    help="bo qua phan do do tre kien truc")
+    p.add_argument("--fac-cache", default=None,
+                   help="thu muc cache PIVOT cua phan ra. Pivoted QR ton 111 phut "
+                        "cho Mistral-7B ca 7 lop; cache lai thi cac run sau gan nhu "
+                        "tuc thi. Chi phu thuoc (model, lop, basis) nen dung chung duoc.")
     p.add_argument("--factorize-device", default="auto",
                    help="noi chay phan ra: auto (= --device), cuda, hoac cpu. "
                         "Mac dinh GPU vi matmul float64 tren CPU hong tren mot so box.")

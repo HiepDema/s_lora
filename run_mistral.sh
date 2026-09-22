@@ -30,14 +30,18 @@ LR="${LR:-1e-3}"
 COMMON="--model mistralai/Mistral-7B-v0.1 --target-set all7 --method hybrid
         --tf32 --grad-ckpt --seed 0 --max-len 512 --batch 8 --accum 16
         --lr-schedule cosine --warmup-ratio 0.03 --weight-decay 0
-        --max-train 100000 --out-dir runs_mistral"
+        --max-train 100000 --out-dir runs_mistral
+        --fac-cache fac_cache/mistral7b"
 
 if [ "$N" = "sweep" ]; then
-  # 8000 mau, 1 epoch: du de xep hang lr, ~25 phut moi diem
+  # Batch hieu dung 128 nen 8000 mau chi cho 62 buoc optimizer — qua it de
+  # phan biet lr. 30000 mau cho ~234 buoc, ~27 phut moi diem.
+  # Xep hang theo VAL LOSS chu khong theo accuracy: 300 bai GSM8K co sd ~2.6%,
+  # qua nhieu de so ba lr voi nhau.
   for L in 2e-4 5e-4 1e-3; do
     echo "=== lr=$L ==="
     python -u finetune_math.py --rank 61 --rank-square 61 $COMMON \
-      --lr "$L" --epochs 1 --max-train 8000 --limit-eval 300 \
+      --lr "$L" --epochs 1 --max-train 30000 --limit-eval 300 \
       --no-bench --no-save-ckpt --out-dir "sweep_$L"
   done
   echo SWEEP_DONE
