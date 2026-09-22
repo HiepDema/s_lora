@@ -2,7 +2,9 @@
 # S-LoRA tren Mistral-7B theo DUNG cau hinh PiSSA (Meng et al., NeurIPS 2024).
 #
 #   bash run_pissa.sh sweep   # 2 diem lr, 30K mau, xep theo val loss
-#   bash run_pissa.sh main    # run chinh: r=64, 100K, 1 epoch
+#   bash run_pissa.sh both    # ca hai run chinh, noi tiep nhau
+#   bash run_pissa.sh 116     # rieng r=116 (167.25M, khop PiSSA)
+#   bash run_pissa.sh 64      # rieng r=64  ( 92.27M, ban re hon)
 #
 # ------------------------------------------------------------------ cau hinh
 # PiSSA muc 5 ghi ro: AdamW, batch 128, lr 2e-5, cosine, warmup 0.03, khong
@@ -57,7 +59,7 @@
 # moi co y nghia. Chenh lech duoi ~2 diem GSM8K khong ket luan duoc gi.
 set -u
 
-N="${1:?dung: bash run_pissa.sh sweep|main}"
+N="${1:?dung: bash run_pissa.sh sweep, both, 116 hoac 64}"
 R="${R:-116}"
 LR="${LR:-2e-5}"
 
@@ -82,9 +84,22 @@ if [ "$N" = "sweep" ]; then
   exit 0
 fi
 
-echo "==> S-LoRA r=$R (167.25M, khop PiSSA 167.77M), lr=$LR, 100K, 1 epoch"
-python -u finetune_math.py --rank "$R" --rank-square "$R" $COMMON \
-  --lr "$LR" --epochs 1 --max-train 100000 --eval-math \
-  --out-dir runs_pissa
+run_one() {
+  local r="$1" mb="$2"
+  echo
+  echo "================================================================"
+  echo "==> S-LoRA r=$r  ($mb)  lr=$LR  100K  1 epoch  seed 0"
+  echo "================================================================"
+  python -u finetune_math.py --rank "$r" --rank-square "$r" $COMMON     --lr "$LR" --epochs 1 --max-train 100000 --eval-math     --out-dir "runs_pissa_r$r"
+  echo "RUN_DONE_$r"
+}
 
-echo "PISSA_DONE"
+case "$N" in
+  both) run_one 116 "167.25M, khop PiSSA 167.77M"
+        run_one  64 " 92.27M, 55% ngan sach PiSSA" ;;
+  116)  run_one 116 "167.25M, khop PiSSA 167.77M" ;;
+  64)   run_one  64 " 92.27M, 55% ngan sach PiSSA" ;;
+  *)    echo "N phai la sweep, both, 116 hoac 64"; exit 1 ;;
+esac
+
+echo ALL_DONE

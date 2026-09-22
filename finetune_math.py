@@ -28,6 +28,7 @@ import urllib.request
 import torch
 
 import finetune_e2e as E
+import metamath_eval as MM
 from peft_generic import TARGETS
 
 MATHQA = ("https://huggingface.co/datasets/meta-math/MetaMathQA/resolve/main/"
@@ -241,10 +242,13 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
     getg = last_boxed if is_math else extract_gold
     same = math_equal if is_math else (
         lambda p, g: p is not None and g is not None and abs(p - g) < 1e-4)
+    # Diem CHINH THUC: bo cham cua MetaMath, dung thu PiSSA/PMSS dung. Diem tu
+    # viet giu lai lam doi chieu de biet hai ben lech bao nhieu.
+    off = MM.score_math if is_math else MM.score_gsm8k
     was = model.training
     model.eval()
     tok.padding_side = "left"
-    t0, hit, n = time.perf_counter(), 0, 0
+    t0, hit, n, hit_mm = time.perf_counter(), 0, 0, 0
     recs = []
     for i in range(0, len(tests), a.eval_batch):
         chunk = tests[i:i + a.eval_batch]
@@ -258,11 +262,15 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
             gen = tok.decode(out[j, enc.input_ids.shape[1]:], skip_special_tokens=True)
             p, g = getp(gen), getg(gold)
             ok = same(p, g)
+            ok_mm = off(gen, g)
             hit += ok
+            hit_mm += ok_mm
             n += 1
-            recs.append({"q": q, "gen": gen, "pred": p, "gold": g, "ok": bool(ok)})
+            recs.append({"q": q, "gen": gen, "pred": p, "gold": g,
+                         "ok": bool(ok), "ok_mm": bool(ok_mm)})
         if i % (a.eval_batch * 10) == 0:
-            print(f"      {n}/{len(tests)}  acc {100*hit/max(n,1):.2f}%  "
+            print(f"      {n}/{len(tests)}  MetaMath {100*hit_mm/max(n,1):.2f}%  "
+                  f"(tu viet {100*hit/max(n,1):.2f}%)  "
                   f"({time.perf_counter()-t0:.0f}s)", flush=True)
     tok.padding_side = "right"
     model.train(was)
@@ -273,12 +281,19 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
         for r in recs:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     el = time.perf_counter() - t0
-    print(f"\n    [{tag}]  {name} accuracy = {acc:.2f}%  ({hit}/{n}, {el:.0f}s)")
+    acc_mm = 100 * hit_mm / max(n, 1)
+    print(f"\n    [{tag}]  {name} accuracy = {acc_mm:.2f}%  ({hit_mm}/{n}, {el:.0f}s)"
+          f"   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS")
+    print(f"    {' ' * len(tag)}    (ham tu viet: {acc:.2f}%, lech {acc - acc_mm:+.2f})")
     nofmt = sum(1 for r in recs if r["pred"] is None)
     if nofmt:
         print(f"    canh bao: {nofmt} cau khong trich duoc so nao ({100*nofmt/n:.1f}%)")
-    return dict(acc=acc, hit=hit, n=n, gen_s=round(el, 1), unparsed=nofmt,
-                benchmark=name)
+    nomark = sum(1 for r in recs if "The answer is: " not in r["gen"])
+    if nomark:
+        print(f"    {nomark} cau thieu nhan 'The answer is: ' ({100*nomark/n:.1f}%) "
+              f"— MetaMath tinh SAI het, khong co duong lui")
+    return dict(acc=acc_mm, hit=hit_mm, n=n, gen_s=round(el, 1), unparsed=nofmt,
+                benchmark=name, acc_own=acc, hit_own=hit, no_marker=nomark)
 
 
 # =========================================================================== main
