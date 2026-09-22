@@ -2,9 +2,10 @@
 # S-LoRA tren Mistral-7B theo DUNG cau hinh PiSSA (Meng et al., NeurIPS 2024).
 #
 #   bash run_pissa.sh sweep   # 2 diem lr, 30K mau, xep theo val loss
-#   bash run_pissa.sh both    # ca hai run chinh, noi tiep nhau
-#   bash run_pissa.sh 116     # rieng r=116 (167.25M, khop PiSSA)
-#   bash run_pissa.sh 64      # rieng r=64  ( 92.27M, ban re hon)
+#   bash run_pissa.sh both    # S-LoRA r=116 roi LoRA r=64
+#   bash run_pissa.sh 116     # rieng S-LoRA r=116 (167.25M)
+#   bash run_pissa.sh lora    # rieng LoRA r=64 (167.77M)
+#   bash run_pissa.sh 64      # rieng S-LoRA r=64 (92.27M)
 #
 # ------------------------------------------------------------------ cau hinh
 # PiSSA muc 5 ghi ro: AdamW, batch 128, lr 2e-5, cosine, warmup 0.03, khong
@@ -64,10 +65,11 @@ R="${R:-116}"
 LR="${LR:-2e-5}"
 
 # batch 128 = 8 x accum 16 vi VRAM; fp32 nen phai grad checkpointing.
-COMMON="--model mistralai/Mistral-7B-v0.1 --target-set all7 --method hybrid
+COMMON_NM="--model mistralai/Mistral-7B-v0.1 --target-set all7
         --tf32 --grad-ckpt --seed 0 --max-len 512 --batch 8 --accum 16
         --lr-schedule cosine --warmup-ratio 0.03 --weight-decay 0
         --fac-cache fac_cache/mistral7b"
+COMMON="--method hybrid $COMMON_NM"
 
 if [ "$N" = "sweep" ]; then
   # 2e-5 la so cua PiSSA va chuyen sang duoc TRUC TIEP vi alpha/r = 1 o ca hai
@@ -84,6 +86,22 @@ if [ "$N" = "sweep" ]; then
   exit 0
 fi
 
+# LoRA r=64 la DUNG cau hinh baseline cua PiSSA: 2.621.440 x 64 = 167.77M, gan
+# vao ca bay lop, alpha = r. Chay no tren chinh pipeline nay phuc vu hai viec:
+#   1. Doi chung S-LoRA r=116 (167.25M) o CUNG ngan sach, CUNG pipeline — thay
+#      vi so voi con so trich dan tu paper khac.
+#   2. Kiem tra pipeline: neu LoRA cua minh ra gan 69.50 cua PiSSA thi duong ong
+#      nay tai hien duoc ho. Neu lech xa thi MOI so sanh voi so cong bo deu phai
+#      kem canh bao, ke ca ket qua S-LoRA.
+run_lora() {
+  echo
+  echo "================================================================"
+  echo "==> LoRA r=64  (167.77M, dung baseline PiSSA)  lr=$LR  100K  1 epoch  seed 0"
+  echo "================================================================"
+  python -u finetune_math.py --method lora --rank 64 $COMMON_NM     --lr "$LR" --epochs 1 --max-train 100000 --eval-math     --out-dir runs_pissa_lora64
+  echo "RUN_DONE_lora64"
+}
+
 run_one() {
   local r="$1" mb="$2"
   echo
@@ -96,7 +114,8 @@ run_one() {
 
 case "$N" in
   both) run_one 116 "167.25M, khop PiSSA 167.77M"
-        run_one  64 " 92.27M, 55% ngan sach PiSSA" ;;
+        run_lora ;;
+  lora) run_lora ;;
   116)  run_one 116 "167.25M, khop PiSSA 167.77M" ;;
   64)   run_one  64 " 92.27M, 55% ngan sach PiSSA" ;;
   *)    echo "N phai la sweep, both, 116 hoac 64"; exit 1 ;;
