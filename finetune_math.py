@@ -68,11 +68,19 @@ def load_gsm8k():
     return [(q, a) for q, a in zip(df["question"], df["answer"])]
 
 
-def encode_train(rows, tok, max_len):
-    """Loss CHI tinh tren phan loi giai, khong tinh tren de bai."""
+def encode_train(rows, tok, max_len, add_bos=False):
+    """Loss CHI tinh tren phan loi giai, khong tinh tren de bai.
+
+    add_bos: them token <s> dau chuoi. MetaMath/PiSSA dung HF trainer va vLLM,
+    ca hai deu them BOS mac dinh; ban goc o day dung add_special_tokens=False
+    nen KHONG co BOS. Mistral-7B duoc pretrain co BOS, nen bo di la mot phep
+    doi phan phoi that. Phai bat o CA train lan eval, neu khong se lech nhau.
+    """
     out = []
     for r in rows:
         p = tok(PROMPT.format(q=r["query"]), add_special_tokens=False).input_ids
+        if add_bos:
+            p = [tok.bos_token_id] + p
         c = tok(" " + r["response"].strip(),
                 add_special_tokens=False).input_ids + [tok.eos_token_id]
         ids, lab = (p + c)[:max_len], ([-100] * len(p) + c)[:max_len]
@@ -249,12 +257,21 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
     model.eval()
     tok.padding_side = "left"
     t0, hit, n, hit_mm = time.perf_counter(), 0, 0, 0
-    recs = []
-    for i in range(0, len(tests), a.eval_batch):
-        chunk = tests[i:i + a.eval_batch]
+
+    # Xep theo do dai de bat cap: generate() dem toan batch len den cau dai nhat
+    # va chay den khi MOI chuoi xong, nen tron dai ngan lai la phi ca padding lan
+    # buoc sinh. Ghi ket qua ve DUNG thu tu goc — phan tich MATH theo chu de dua
+    # vao thu tu 7 tap noi nhau trong jsonl.
+    order = sorted(range(len(tests)),
+                   key=lambda j: len(tok(PROMPT.format(q=tests[j][0]),
+                                         add_special_tokens=False).input_ids))
+    recs = [None] * len(tests)
+    for i in range(0, len(order), a.eval_batch):
+        ids = order[i:i + a.eval_batch]
+        chunk = [tests[j] for j in ids]
         enc = tok([PROMPT.format(q=q) for q, _ in chunk], return_tensors="pt",
                   padding=True, truncation=True, max_length=a.eval_max_len,
-                  add_special_tokens=False).to(a.device)
+                  add_special_tokens=bool(getattr(a, "add_bos", False))).to(a.device)
         out = model.generate(**enc, max_new_tokens=a.max_new_tokens,
                              do_sample=False, num_beams=1,
                              pad_token_id=tok.eos_token_id)
@@ -266,8 +283,8 @@ def evaluate(model, tok, tests, a, tag, kind="gsm8k"):
             hit += ok
             hit_mm += ok_mm
             n += 1
-            recs.append({"q": q, "gen": gen, "pred": p, "gold": g,
-                         "ok": bool(ok), "ok_mm": bool(ok_mm)})
+            recs[ids[j]] = {"q": q, "gen": gen, "pred": p, "gold": g,
+                            "ok": bool(ok), "ok_mm": bool(ok_mm)}
         if i % (a.eval_batch * 10) == 0:
             print(f"      {n}/{len(tests)}  MetaMath {100*hit_mm/max(n,1):.2f}%  "
                   f"(tu viet {100*hit/max(n,1):.2f}%)  "
@@ -336,6 +353,8 @@ def main():
     p.add_argument("--max-len", type=int, default=512,
                    help="p95 cua MetaMathQA ~371 token; 512 phu thoai mai")
 
+    p.add_argument("--add-bos", action="store_true",
+                   help="them token BOS o train va eval, nhu MetaMath/PiSSA")
     p.add_argument("--eval-batch", type=int, default=16)
     p.add_argument("--eval-max-len", type=int, default=512)
     p.add_argument("--max-new-tokens", type=int, default=512)
@@ -410,8 +429,9 @@ def main():
     rows = load_mathqa(a.max_train, a.seed, a.only_gsm)
     nval = max(1, int(len(rows) * a.val_frac))
     val_rows, train_rows = rows[:nval], rows[nval:]
-    data = encode_train(train_rows, tok, a.max_len)
-    val_data = None if a.no_val else encode_train(val_rows, tok, a.max_len)
+    data = encode_train(train_rows, tok, a.max_len, a.add_bos)
+    val_data = None if a.no_val else encode_train(val_rows, tok, a.max_len,
+                                                  a.add_bos)
     tests = [] if a.skip_gsm8k else load_gsm8k()
     if a.limit_eval:
         tests = tests[:a.limit_eval]

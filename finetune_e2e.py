@@ -683,9 +683,23 @@ def verify_factorization(model, targets, ref, tol=1e-4):
     return worst
 
 
+DTYPES = {"fp32": torch.float32, "bf16": torch.bfloat16, "fp16": torch.float16}
+
+
 def build_model(a):
     from transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained(a.model, dtype=torch.float32)
+    md = DTYPES[getattr(a, "model_dtype", "fp32")]
+    kw = dict(dtype=md)
+    attn = getattr(a, "attn", "auto")
+    if attn != "auto":
+        kw["attn_implementation"] = attn
+    model = AutoModelForCausalLM.from_pretrained(a.model, **kw)
+    if md is not torch.float32:
+        # bf16 co 8 bit mantissa: phan ra dung fp64 roi ha xuong bf16 se de lai
+        # sai so ~1e-2, khong phai dau hieu hong. Noi long nguong kiem tuong ung.
+        a.verify_tol = max(getattr(a, "verify_tol", 1e-4), 3e-2)
+        print(f"  model dtype: {getattr(a, 'model_dtype')} "
+              f"(nguong kiem phan ra noi thanh {a.verify_tol:.0e})", flush=True)
     n_orig = sum(p.numel() for p in model.parameters())
 
     # Phan ra tren GPU neu duoc: matmul float64 tren CPU hong tren mot so box,
@@ -745,7 +759,8 @@ def build_model(a):
             p.requires_grad_(False)
 
     if need_fac and ref:
-        verify_factorization(model, a.targets, ref)
+        verify_factorization(model, a.targets, ref,
+                             tol=getattr(a, "verify_tol", 1e-4))
 
     if a.grad_ckpt:
         # Base dong bang -> moi dau vao cua doan duoc checkpoint deu khong can
@@ -824,6 +839,15 @@ def main():
     p.add_argument("--max-len", type=int, default=128)
     p.add_argument("--max-train", type=int, default=None, help="cat bot tap train de thu nhanh")
     p.add_argument("--limit-eval", type=int, default=None)
+    p.add_argument("--model-dtype", choices=["fp32", "bf16", "fp16"],
+                   default="fp32",
+                   help="bf16 nhanh ~2x va giam nua VRAM. PiSSA quy dinh fp32 "
+                        "cho LoRA/PiSSA, nhung chinh Bang 7 cua ho cho thay "
+                        "Mistral-7B chay bf16 TOT HON fp32 (73.09 vs 65.88 "
+                        "GSM8K). Doi thi phai doi cho CA hai nhanh so sanh.")
+    p.add_argument("--attn", default="auto",
+                   choices=["auto", "sdpa", "flash_attention_2", "eager"],
+                   help="mac dinh 'auto' = pho mac cho HF tu chon")
     p.add_argument("--eval-batch", type=int, default=16)
     p.add_argument("--beams", type=int, default=10)
     p.add_argument("--length-penalty", type=float, default=0.9)
