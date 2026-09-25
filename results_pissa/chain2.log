@@ -1,0 +1,84 @@
+[03:26:15] doi run 1 (S-LoRA r=116) xong...
+[06:17:16] run 1 xong, bat dau LoRA r=64
+
+================================================================
+==> LoRA r=64  (167.77M, dung baseline PiSSA)  lr=2e-5  100K  1 epoch  seed 0
+================================================================
+
+=== lora_r64_na_s0 ===
+model=mistralai/Mistral-7B-v0.1  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap MetaMathQA...
+  nap MATH test...
+  train 98859 | val 1000 | GSM8K 1319 | MATH 5000
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights:  13%|█▎        | 37/291 [00:00<00:00, 355.09it/s]Loading weights:  25%|██▌       | 73/291 [00:00<00:00, 325.27it/s]Loading weights:  36%|███▋      | 106/291 [00:00<00:00, 304.29it/s]Loading weights:  48%|████▊     | 141/291 [00:00<00:00, 306.61it/s]Loading weights:  60%|██████    | 175/291 [00:00<00:00, 317.52it/s]Loading weights:  73%|███████▎  | 211/291 [00:00<00:00, 315.21it/s]Loading weights:  85%|████████▍ | 247/291 [00:00<00:00, 314.28it/s]Loading weights:  96%|█████████▌| 279/291 [00:00<00:00, 313.92it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 320.61it/s]
+  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)
+
+  TRAIN DUOC: 167.772 M (2.2643 % cua 7409.50 M)   [25.5s]
+
+  train: 98859 vi du, 773 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/773  loss 0.2933  lr 1.95e-05  0.11 it/s  ETA 103m
+    ep 0 step 200/773  loss 0.2033  lr 1.74e-05  0.11 it/s  ETA 88m
+    ep 0 step 300/773  loss 0.1718  lr 1.40e-05  0.11 it/s  ETA 73m
+    ep 0 step 400/773  loss 0.1658  lr 9.92e-06  0.11 it/s  ETA 58m
+    ep 0 step 500/773  loss 0.1624  lr 5.86e-06  0.11 it/s  ETA 42m
+    ep 0 step 600/773  loss 0.1533  lr 2.51e-06  0.11 it/s  ETA 27m
+    ep 0 step 700/773  loss 0.1488  lr 4.64e-07  0.11 it/s  ETA 11m
+    [ep 0] val loss 0.1523  ppl 1.164  train 0.1528  gap -0.0005  (11s)  <- tot nhat
+    luu runs_pissa_lora64/lora_r64_na_s0_last.pt  (640.1 MB)
+    luu runs_pissa_lora64/lora_r64_na_s0_best.pt  (epoch 0, val 0.1523)
+      16/1319  MetaMath 68.75%  (tu viet 68.75%)  (18s)
+      176/1319  MetaMath 69.32%  (tu viet 69.32%)  (115s)
+      336/1319  MetaMath 72.32%  (tu viet 72.32%)  (200s)
+      496/1319  MetaMath 71.77%  (tu viet 71.77%)  (277s)
+      656/1319  MetaMath 72.26%  (tu viet 72.26%)  (368s)
+      816/1319  MetaMath 72.43%  (tu viet 72.43%)  (466s)
+      976/1319  MetaMath 72.75%  (tu viet 72.75%)  (545s)
+      1136/1319  MetaMath 72.01%  (tu viet 72.01%)  (645s)
+      1296/1319  MetaMath 71.99%  (tu viet 71.99%)  (728s)
+
+    [lora_r64_na_s0]  GSM8K accuracy = 72.02%  (950/1319, 743s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                      (ham tu viet: 72.02%, lech +0.00)
+    5 cau thieu nhan 'The answer is: ' (0.4%) — MetaMath tinh SAI het, khong co duong lui
+      16/5000  MetaMath 31.25%  (tu viet 31.25%)  (14s)
+      176/5000  MetaMath 40.34%  (tu viet 39.77%)  (206s)
+      336/5000  MetaMath 36.90%  (tu viet 36.90%)  (376s)
+      496/5000  MetaMath 35.08%  (tu viet 34.68%)  (556s)
+      656/5000  MetaMath 34.15%  (tu viet 33.84%)  (723s)
+      816/5000  MetaMath 31.37%  (tu viet 31.25%)  (895s)
+      976/5000  MetaMath 31.15%  (tu viet 31.05%)  (1054s)
+      1136/5000  MetaMath 30.81%  (tu viet 30.63%)  (1202s)
+      1296/5000  MetaMath 29.40%  (tu viet 29.24%)  (1392s)
+      1456/5000  MetaMath 28.85%  (tu viet 28.85%)  (1573s)
+      1616/5000  MetaMath 27.91%  (tu viet 28.09%)  (1731s)
+      1776/5000  MetaMath 26.75%  (tu viet 26.86%)  (1925s)
+      1936/5000  MetaMath 26.29%  (tu viet 26.29%)  (2111s)
+      2096/5000  MetaMath 25.72%  (tu viet 25.67%)  (2286s)
+      2256/5000  MetaMath 24.78%  (tu viet 24.73%)  (2485s)
+      2416/5000  MetaMath 23.72%  (tu viet 23.68%)  (2677s)
+      2576/5000  MetaMath 22.75%  (tu viet 22.71%)  (2871s)
+      2736/5000  MetaMath 21.97%  (tu viet 21.93%)  (3072s)
+      2896/5000  MetaMath 21.44%  (tu viet 21.34%)  (3263s)
+      3056/5000  MetaMath 21.11%  (tu viet 21.01%)  (3451s)
+      3216/5000  MetaMath 20.49%  (tu viet 20.40%)  (3626s)
+      3376/5000  MetaMath 20.29%  (tu viet 20.23%)  (3789s)
+      3536/5000  MetaMath 19.91%  (tu viet 19.82%)  (3960s)
+      3696/5000  MetaMath 20.32%  (tu viet 20.24%)  (4126s)
+      3856/5000  MetaMath 20.77%  (tu viet 20.75%)  (4301s)
+      4016/5000  MetaMath 21.79%  (tu viet 21.84%)  (4442s)
+      4176/5000  MetaMath 22.39%  (tu viet 22.44%)  (4594s)
+      4336/5000  MetaMath 23.15%  (tu viet 23.32%)  (4757s)
+      4496/5000  MetaMath 23.51%  (tu viet 23.64%)  (4927s)
+      4656/5000  MetaMath 23.02%  (tu viet 23.15%)  (5118s)
+      4816/5000  MetaMath 22.63%  (tu viet 22.76%)  (5311s)
+      4976/5000  MetaMath 22.19%  (tu viet 22.31%)  (5495s)
+
+    [lora_r64_na_s0_math]  MATH accuracy = 22.12%  (1106/5000, 5530s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                           (ham tu viet: 22.24%, lech +0.12)
+    canh bao: 640 cau khong trich duoc so nao (12.8%)
+    647 cau thieu nhan 'The answer is: ' (12.9%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> runs_pissa_lora64/lora_r64_na_s0.json
+RUN_DONE_lora64
+ALL_DONE
+CHAIN2_DONE

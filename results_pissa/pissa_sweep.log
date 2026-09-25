@@ -1,0 +1,54 @@
+=== lr=2e-5 ===
+
+=== hybrid_r116_na_s0 ===
+model=mistralai/Mistral-7B-v0.1  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap MetaMathQA...
+  train 29665 | val 300 | GSM8K 300 | MATH 0
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights:  11%|█         | 31/291 [00:00<00:00, 268.48it/s]Loading weights:  21%|██        | 60/291 [00:00<00:00, 261.66it/s]Loading weights:  32%|███▏      | 94/291 [00:00<00:00, 270.05it/s]Loading weights:  42%|████▏     | 122/291 [00:00<00:00, 273.56it/s]Loading weights:  52%|█████▏    | 150/291 [00:00<00:00, 273.43it/s]Loading weights:  61%|██████    | 178/291 [00:00<00:00, 272.40it/s]Loading weights:  71%|███████   | 206/291 [00:00<00:00, 270.53it/s]Loading weights:  80%|████████  | 234/291 [00:00<00:00, 271.86it/s]Loading weights:  90%|█████████ | 262/291 [00:00<00:00, 271.33it/s]Loading weights: 100%|██████████| 291/291 [00:01<00:00, 277.14it/s]
+  phan ra tren cuda
+  hybrid: S-LoRA r=116 + LoRA r=116 tren ma tran vuong
+    8/32 block  (1s)
+    16/32 block  (2s)
+    24/32 block  (3s)
+    32/32 block  (4s)
+    hybrid: 160 ma tran S-LoRA (r=116), 64 ma tran vuong LoRA (r=116)
+  kiem phan ra: sai so dau ra lon nhat 6.12e-06 (h.4.mlp.down_proj)
+  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)
+
+  TRAIN DUOC: 167.248 M (2.2574 % cua 7408.98 M)   [10.0s]
+
+  train: 29665 vi du, 232 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/232  loss 0.3501  lr 1.26e-05  0.09 it/s  ETA 24m
+    ep 0 step 200/232  loss 0.2626  lr 9.73e-07  0.09 it/s  ETA 6m
+    [ep 0] val loss 0.2305  ppl 1.259  train 0.1902  gap +0.0403  (12s)  <- tot nhat
+      16/300  acc 50.00%  (19s)
+      176/300  acc 58.52%  (115s)
+
+    [hybrid_r116_na_s0]  GSM8K accuracy = 57.00%  (171/300, 192s)
+
+  ket qua -> pissa_sweep_2e-5/hybrid_r116_na_s0.json
+=== lr=2e-4 ===
+
+=== hybrid_r116_na_s0 ===
+model=mistralai/Mistral-7B-v0.1  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap MetaMathQA...
+  train 29665 | val 300 | GSM8K 300 | MATH 0
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights:  11%|█▏        | 33/291 [00:00<00:00, 305.01it/s]Loading weights:  23%|██▎       | 67/291 [00:00<00:00, 308.03it/s]Loading weights:  34%|███▎      | 98/291 [00:00<00:00, 290.79it/s]Loading weights:  45%|████▌     | 132/291 [00:00<00:00, 298.09it/s]Loading weights:  57%|█████▋    | 166/291 [00:00<00:00, 301.54it/s]Loading weights:  69%|██████▉   | 202/291 [00:00<00:00, 300.26it/s]Loading weights:  82%|████████▏ | 238/291 [00:00<00:00, 293.67it/s]Loading weights:  92%|█████████▏| 268/291 [00:00<00:00, 291.34it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 305.52it/s]
+  phan ra tren cuda
+  hybrid: S-LoRA r=116 + LoRA r=116 tren ma tran vuong
+    8/32 block  (1s)
+    16/32 block  (2s)
+    24/32 block  (3s)
+    32/32 block  (4s)
+    hybrid: 160 ma tran S-LoRA (r=116), 64 ma tran vuong LoRA (r=116)
+  kiem phan ra: sai so dau ra lon nhat 6.12e-06 (h.4.mlp.down_proj)
+  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)
+
+  TRAIN DUOC: 167.248 M (2.2574 % cua 7408.98 M)   [9.5s]
+
+  train: 29665 vi du, 232 buoc, lr=0.0002 (cosine), batch=8
+    ep 0 step 100/232  loss 5.1518  lr 1.26e-04  0.09 it/s  ETA 24m
+Terminated
+SWEEP_DONE

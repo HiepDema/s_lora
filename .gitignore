@@ -7,3 +7,4 @@ runs_*/
 *.txt
 .venv/
 S-LoRA.code-workspace
+results_pissa/fac_cache/

@@ -1,0 +1,107 @@
+[01:09:47] doi quet lr xong...
+[01:55:48] val loss tung muc lr:
+=== lr=2e-5 ===
+    [ep 0] val loss 0.2305  ppl 1.259  train 0.1902  gap +0.0403  (12s)  <- tot nhat
+=== lr=2e-4 ===
+[01:55:48] chon lr=2e-5
+
+================================================================
+==> S-LoRA r=116  (167.25M, khop PiSSA 167.77M)  lr=2e-5  100K  1 epoch  seed 0
+================================================================
+
+=== hybrid_r116_na_s0 ===
+model=mistralai/Mistral-7B-v0.1  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap MetaMathQA...
+  nap MATH test...
+Generating train split:   0%|          | 0/1744 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 1744/1744 [00:00<00:00, 267649.70 examples/s]
+Generating test split:   0%|          | 0/1187 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 1187/1187 [00:00<00:00, 343425.46 examples/s]
+Generating train split:   0%|          | 0/771 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 771/771 [00:00<00:00, 190999.25 examples/s]
+Generating test split:   0%|          | 0/474 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 474/474 [00:00<00:00, 192888.34 examples/s]
+Generating train split:   0%|          | 0/870 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 870/870 [00:00<00:00, 159249.56 examples/s]
+Generating test split:   0%|          | 0/479 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 479/479 [00:00<00:00, 121902.29 examples/s]
+Generating train split:   0%|          | 0/1295 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 1295/1295 [00:00<00:00, 221997.94 examples/s]
+Generating test split:   0%|          | 0/903 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 903/903 [00:00<00:00, 250344.14 examples/s]
+Generating train split:   0%|          | 0/869 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 869/869 [00:00<00:00, 185952.26 examples/s]
+Generating test split:   0%|          | 0/540 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 540/540 [00:00<00:00, 198069.45 examples/s]
+Generating train split:   0%|          | 0/1205 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 1205/1205 [00:00<00:00, 249722.63 examples/s]
+Generating test split:   0%|          | 0/871 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 871/871 [00:00<00:00, 277601.73 examples/s]
+Generating train split:   0%|          | 0/746 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 746/746 [00:00<00:00, 175961.69 examples/s]
+Generating test split:   0%|          | 0/546 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 546/546 [00:00<00:00, 175177.08 examples/s]
+  train 98859 | val 1000 | GSM8K 1319 | MATH 5000
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights:  11%|█▏        | 33/291 [00:00<00:00, 298.02it/s]Loading weights:  23%|██▎       | 67/291 [00:00<00:00, 317.83it/s]Loading weights:  35%|███▌      | 103/291 [00:00<00:00, 305.61it/s]Loading weights:  48%|████▊     | 139/291 [00:00<00:00, 305.09it/s]Loading weights:  60%|██████    | 175/291 [00:00<00:00, 292.76it/s]Loading weights:  73%|███████▎  | 211/291 [00:00<00:00, 307.08it/s]Loading weights:  85%|████████▍ | 247/291 [00:00<00:00, 311.58it/s]Loading weights:  96%|█████████▌| 279/291 [00:00<00:00, 308.81it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 313.46it/s]
+  phan ra tren cuda
+  hybrid: S-LoRA r=116 + LoRA r=116 tren ma tran vuong
+    8/32 block  (1s)
+    16/32 block  (2s)
+    24/32 block  (3s)
+    32/32 block  (4s)
+    hybrid: 160 ma tran S-LoRA (r=116), 64 ma tran vuong LoRA (r=116)
+  kiem phan ra: sai so dau ra lon nhat 6.12e-06 (h.4.mlp.down_proj)
+  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)
+
+  TRAIN DUOC: 167.248 M (2.2574 % cua 7408.98 M)   [9.5s]
+
+  train: 98859 vi du, 773 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/773  loss 0.3997  lr 1.95e-05  0.09 it/s  ETA 124m
+    ep 0 step 200/773  loss 0.3332  lr 1.74e-05  0.09 it/s  ETA 106m
+    ep 0 step 300/773  loss 0.2773  lr 1.40e-05  0.09 it/s  ETA 88m
+    ep 0 step 400/773  loss 0.2547  lr 9.92e-06  0.09 it/s  ETA 69m
+    ep 0 step 500/773  loss 0.2302  lr 5.86e-06  0.09 it/s  ETA 51m
+    ep 0 step 600/773  loss 0.2052  lr 2.51e-06  0.09 it/s  ETA 32m
+    ep 0 step 700/773  loss 0.1858  lr 4.64e-07  0.09 it/s  ETA 14m
+    [ep 0] val loss 0.1792  ppl 1.196  train 0.1848  gap -0.0055  (13s)  <- tot nhat
+    luu runs_pissa_r116/hybrid_r116_na_s0_last.pt  (638.1 MB)
+    luu runs_pissa_r116/hybrid_r116_na_s0_best.pt  (epoch 0, val 0.1792)
+      16/1319  MetaMath 50.00%  (tu viet 50.00%)  (19s)
+      176/1319  MetaMath 59.09%  (tu viet 59.09%)  (146s)
+      336/1319  MetaMath 61.90%  (tu viet 61.90%)  (235s)
+      496/1319  MetaMath 62.50%  (tu viet 62.50%)  (319s)
+      656/1319  MetaMath 61.89%  (tu viet 61.89%)  (420s)
+      816/1319  MetaMath 62.62%  (tu viet 62.62%)  (511s)
+      976/1319  MetaMath 62.19%  (tu viet 62.19%)  (593s)
+      1136/1319  MetaMath 61.71%  (tu viet 61.71%)  (698s)
+      1296/1319  MetaMath 61.96%  (tu viet 61.96%)  (788s)
+
+    [hybrid_r116_na_s0]  GSM8K accuracy = 61.94%  (817/1319, 808s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                         (ham tu viet: 61.94%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (0.6%) — MetaMath tinh SAI het, khong co duong lui
+      16/5000  MetaMath 37.50%  (tu viet 37.50%)  (12s)
+      176/5000  MetaMath 17.61%  (tu viet 17.05%)  (203s)
+      336/5000  MetaMath 19.94%  (tu viet 19.64%)  (383s)
+      496/5000  MetaMath 20.36%  (tu viet 20.36%)  (580s)
+      656/5000  MetaMath 20.27%  (tu viet 20.27%)  (767s)
+      816/5000  MetaMath 19.12%  (tu viet 19.00%)  (969s)
+      976/5000  MetaMath 19.06%  (tu viet 18.95%)  (1163s)
+      1136/5000  MetaMath 19.28%  (tu viet 19.19%)  (1326s)
+      1296/5000  MetaMath 18.36%  (tu viet 18.21%)  (1527s)
+      1456/5000  MetaMath 17.93%  (tu viet 17.79%)  (1724s)
+      1616/5000  MetaMath 17.08%  (tu viet 17.02%)  (1925s)
+      1776/5000  MetaMath 16.55%  (tu viet 16.44%)  (2141s)
+      1936/5000  MetaMath 15.86%  (tu viet 15.75%)  (2335s)
+      2096/5000  MetaMath 15.17%  (tu viet 15.08%)  (2535s)
+      2256/5000  MetaMath 14.32%  (tu viet 14.23%)  (2745s)
+      2416/5000  MetaMath 13.87%  (tu viet 13.78%)  (2949s)
+      2576/5000  MetaMath 13.35%  (tu viet 13.28%)  (3156s)
+      2736/5000  MetaMath 12.90%  (tu viet 12.83%)  (3368s)
+      2896/5000  MetaMath 12.47%  (tu viet 12.33%)  (3573s)
+      3056/5000  MetaMath 12.24%  (tu viet 12.17%)  (3774s)
+      3216/5000  MetaMath 11.94%  (tu viet 11.88%)  (3953s)
+      3376/5000  MetaMath 11.82%  (tu viet 11.76%)  (4123s)
+      3536/5000  MetaMath 11.62%  (tu viet 11.57%)  (4304s)
+      3696/5000  MetaMath 12.12%  (tu viet 12.07%)  (4493s)
+      3856/5000  MetaMath 12.24%  (tu viet 12.27%)  (4685s)
+      4016/5000  MetaMath 13.00%  (tu viet 13.05%)  (4878s)
+      4176/5000  MetaMath 13.41%  (tu viet 13.48%)  (5084s)
+      4336/5000  MetaMath 13.88%  (tu viet 14.02%)  (5271s)
+      4496/5000  MetaMath 14.15%  (tu viet 14.26%)  (5488s)
+      4656/5000  MetaMath 13.87%  (tu viet 13.98%)  (5692s)
+      4816/5000  MetaMath 13.68%  (tu viet 13.79%)  (5897s)
+      4976/5000  MetaMath 13.36%  (tu viet 13.44%)  (6095s)
+
+    [hybrid_r116_na_s0_math]  MATH accuracy = 13.30%  (665/5000, 6133s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                              (ham tu viet: 13.38%, lech +0.08)
+    canh bao: 730 cau khong trich duoc so nao (14.6%)
+    737 cau thieu nhan 'The answer is: ' (14.7%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> runs_pissa_r116/hybrid_r116_na_s0.json
