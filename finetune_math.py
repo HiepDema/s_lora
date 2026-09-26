@@ -355,6 +355,17 @@ def main():
 
     p.add_argument("--add-bos", action="store_true",
                    help="them token BOS o train va eval, nhu MetaMath/PiSSA")
+    # Hai co nay build_model() doc, nhung file nay co parser RIENG nen phai khai
+    # bao lai o day — them moi ben finetune_e2e.py la khong du.
+    p.add_argument("--model-dtype", choices=["fp32", "bf16", "fp16"],
+                   default="fp32",
+                   help="bf16 nhanh hon va giam nua VRAM. PiSSA quy dinh fp32 "
+                        "cho LoRA/PiSSA, nhung chinh Bang 7 cua ho cho thay "
+                        "Mistral-7B chay bf16 TOT HON fp32 (73.09 vs 65.88 "
+                        "GSM8K). Doi thi phai doi cho CA hai nhanh so sanh.")
+    p.add_argument("--attn", default="auto",
+                   choices=["auto", "sdpa", "flash_attention_2", "eager"],
+                   help="mac dinh 'auto' = pho mac cho HF tu chon")
     p.add_argument("--eval-batch", type=int, default=16)
     p.add_argument("--eval-max-len", type=int, default=512)
     p.add_argument("--max-new-tokens", type=int, default=512)
@@ -383,6 +394,8 @@ def main():
     p.add_argument("--gen-every", type=int, default=0)
     p.add_argument("--gen-every-max", type=int, default=200)
 
+    p.add_argument("--ckpt-reentrant", action="store_true",
+                   help="dung ban reentrant cua gradient checkpointing. Mac dinh la ban KHONG reentrant — transformers 4.x va 5.x chon mac dinh khac nhau nen phai noi ro, neu khong cung mot lenh cho hai hanh vi.")
     p.add_argument("--grad-ckpt", action="store_true")
     p.add_argument("--fac-cache", default=None)
     p.add_argument("--tf32", action="store_true")

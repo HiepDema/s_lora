@@ -767,10 +767,16 @@ def build_model(a):
         # grad, backward se khong sinh gradient nao. enable_input_require_grads()
         # bat embedding yeu cau grad de chuoi khong bi dut. Thieu dong nay la
         # loss.backward() chay nhung tham so khong nhuc nhich.
-        model.gradient_checkpointing_enable()
+        # Noi ro use_reentrant thay vi de mac dinh: transformers 4.x va 5.x chon
+        # khac nhau, nen cung mot dong lenh cho hai hanh vi khac nhau tuy box.
+        # Ban khong reentrant la ban duoc khuyen dung va khong doi hoi input phai
+        # require_grad, nhung van giu enable_input_require_grads() cho chac.
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": a.ckpt_reentrant})
         model.enable_input_require_grads()
         model.config.use_cache = False
-        print("  gradient checkpointing: BAT (~30% cham hon, doi lai ~40% VRAM)")
+        print(f"  gradient checkpointing: BAT (use_reentrant={a.ckpt_reentrant}), "
+              f"~30% cham hon, doi lai ~40% VRAM")
     return model.to(a.device), param_counts(model, n_orig)
 
 
@@ -884,6 +890,8 @@ def main():
     p.add_argument("--log-every", type=int, default=100)
     p.add_argument("--out-dir", default="runs")
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    p.add_argument("--ckpt-reentrant", action="store_true",
+                   help="dung ban reentrant cua gradient checkpointing. Mac dinh la ban KHONG reentrant — transformers 4.x va 5.x chon mac dinh khac nhau nen phai noi ro, neu khong cung mot lenh cho hai hanh vi.")
     p.add_argument("--grad-ckpt", action="store_true",
                    help="gradient checkpointing: giam VRAM ~40%, cham ~30%. Can cho "
                         "model >=7B tren GPU 40GB. La MOT BIEN MOI so voi ket qua cu.")
