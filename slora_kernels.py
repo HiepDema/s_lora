@@ -5,44 +5,48 @@
     K.patch(model)                      # doi forward cua moi RowSpaceLinear
     K.unpatch(model)                    # tra lai ban goc
 
-CHUA DO TREN GPU. Viet khi khong co may, nen moi con so toc do trong file nay
-la suy luan tu so phep truy cap bo nho, khong phai do duoc. Chay
-test_kernels.py truoc khi tin bat cu dieu gi o day.
+DA DO TREN A10, 2026-09-30. KET LUAN: KHONG NEN DUNG MUC 3.
 
---------------------------------------------------------------------- van de
-S-LoRA cham hon LoRA 20% moi buoc (0.090 vs 0.108 it/s, do tren H100 SXM5) du
-IT tham so hon. Cho cham KHONG phai so phep tinh: dang phan ra co dung so phep
-nhan nhu ma tran day. Voi gate_proj 4096x14336,
+Ket qua (gate_proj 4096x14336, bf16, BT=4096):
 
-    x[:,rest] @ X.T : BT x 10240 x 4096
-    h @ C           : BT x  4096 x 4096
-    cong lai        : BT x 4096 x 14336  = dung bang  x @ W
+    LoRA                                 8.089 ms   1.00x
+    S-LoRA nguyen ban                    9.728 ms   1.20x   <- khoang can bu
+    S-LoRA + torch.compile("default")    9.186 ms   1.14x   <- lay lai 1/3
+    S-LoRA muc 1 (mot gather + slice)    7.49 vs 6.56 o phep do rieng — CHAM HON
+    S-LoRA muc 3 (Triton)              208.069 ms  26.00x   <- thua cuBLAS 32 lan
 
-Cho cham la BO NHO. Ban goc, moi lop moi buoc lam:
+Kernel Triton DUNG (chung minh o duoi) nhung vo dung. Khuyen nghi: dung
+torch.compile, bo muc 1 va muc 3.
 
-  pre  : hai lan index_select (moi lan cap phat mot ban sao cua x)
-  post : mot torch.cat (cap phat tensor day du) roi mot index_select nua
+--------------------------------------------------------- ba gia thuyet, do het
+"Gather la nut that"            -> DUNG.  Gather ton 1.673 ms, dung bang toan bo
+                                   chenh lech 1.639 ms giua S-LoRA va LoRA.
+"Hai GEMM noi tiep ton them"    -> SAI.   8.024 ms cho hai GEMM noi tiep so voi
+                                   8.030 ms cho mot GEMM to. Bang nhau.
+"Gather chi so ngau nhien pha   -> SAI.   0.942 ms (ngau nhien) so voi 0.931 ms
+ vo coalescing"                    (lien tiep). Khong khac gi.
 
---------------------------------------------------------------------- cach sua
-Ba muc, muc sau kho hon va rui ro hon muc truoc.
+--------------------------------------------------------- vi sao hai cach deu hong
+MUC 1 hong vi gather CA m cot mot lan (1.801 ms) dat hon gather sel roi rest
+rieng (0.361 + 0.954 = 1.315 ms), va slice co stride bat cuBLAS lam viec voi
+layout xau hon ban sao lien tuc.
 
-MUC 1 — hoan vi mot lan, roi dung SLICE (thuan PyTorch, rui ro thap)
-    xp = x[:, perm]           mot lan gather duy nhat
-    h  = xp[:, :k] + xp[:, k:] @ X.T
-  xp[:, :k] va xp[:, k:] la VIEW chu khong phai ban sao — cuBLAS nhan duoc
-  leading-dimension stride nen khong phai copy. Hai gather thanh mot.
+MUC 3 hong vi gop gather vao GEMM co nghia la phai TU VIET GEMM, ma GEMM tu
+viet thua cuBLAS 32 lan. Gather chi chiem 17% thoi gian; danh doi 17% do de
+mat 84% con lai la lo nang. Day la sai lam thiet ke, khong phai loi cai dat:
+khong co cach nao vua gop duoc gather vua giu duoc cuBLAS.
 
-  Ben post: cap phat san output roi index_copy_ vao dung cho, bo duoc ca
-  torch.cat lan index_select cuoi.
+--------------------------------------------------------- cho nao CON co the an
+Gate va up doc CHUNG mot x (dau ra cua layernorm), k va v cung vay. Neu bat hai
+lop cung mot cap dung CHUNG mot phep hoan vi thi mot lan gather phuc vu ca hai,
+cat doi chi phi gather. Uoc tinh khoang cach tu 1.20x xuong ~1.10x, cong voi
+torch.compile thi gan bang LoRA.
 
-MUC 2 — torch.compile de inductor tu fuse gather voi epilogue.
+Nhung do la doi PHUONG PHAP chu khong phai doi kernel: pivoted QR se phai chon
+mot tap pivot chung cho hai ma tran, tuc khong con toi uu cho tung ma tran. Anh
+huong toi chat luong phan ra bao nhieu thi chua do.
 
-MUC 3 — Triton: mot kernel GEMM doc thang cot cua x theo vector chi so, va lay
-  x[:,sel] lam gia tri khoi tao cua accumulator. Khong con trung gian nao.
-
-X, sel, rest la BUFFER dong bang, khong can gradient. Nho vay backward chi phai
-tra ve dL/dx, tuc mot phep scatter-add — de hon nhieu so voi truong hop X cung
-duoc train.
+--------------------------------------------------------------------- van de goc
 """
 from __future__ import annotations
 
@@ -85,6 +89,8 @@ def post_out_proj_fast(h, sel, rest, XT, n_out):
 # ===================================================================== MUC 3
 # Triton. Mot kernel lam ca gather lan GEMM lan cong x[:,sel].
 
+PRECISION = "tf32"      # doi thanh "ieee" de co fp32 that
+
 if HAVE_TRITON:
 
     @triton.autotune(
@@ -100,7 +106,8 @@ if HAVE_TRITON:
     def _gather_gemm(X_ptr, W_ptr, SEL_ptr, REST_ptr, OUT_ptr,
                      M, N, K,
                      sx_m, sx_k, sw_k, sw_n, so_m, so_n,
-                     BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr):
+                     BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr,
+                     PREC: tl.constexpr = "tf32"):
         """OUT[m,n] = X[m, SEL[n]] + sum_k X[m, REST[k]] * W[k,n].
 
         Cot cua X duoc doc theo vector chi so ngay trong vong lap GEMM, nen ban
@@ -127,7 +134,7 @@ if HAVE_TRITON:
                         mask=mask_m[:, None] & mask_k[None, :], other=0.0)
             b = tl.load(W_ptr + rk[:, None] * sw_k + rn[None, :] * sw_n,
                         mask=mask_k[:, None] & mask_n[None, :], other=0.0)
-            acc += tl.dot(a, b)
+            acc += tl.dot(a, b, input_precision=PREC)
 
         tl.store(OUT_ptr + rm[:, None] * so_m + rn[None, :] * so_n,
                  acc.to(OUT_ptr.dtype.element_ty),
@@ -166,6 +173,8 @@ class PreInProj(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, x, sel, rest, XT):
+        # 'tf32' la mac dinh cua tl.dot; 'ieee' cho fp32 that, cham hon
+        # nhung dung de chung minh kernel khong sai logic.
         ctx.save_for_backward(sel, rest, XT)
         ctx.m = x.shape[-1]
         flat = x.reshape(-1, x.shape[-1])
@@ -175,7 +184,8 @@ class PreInProj(torch.autograd.Function):
         _gather_gemm[grid](flat, XT, sel, rest, out, M, N, K,
                            flat.stride(0), flat.stride(1),
                            XT.stride(0), XT.stride(1),
-                           out.stride(0), out.stride(1))
+                           out.stride(0), out.stride(1),
+                           PREC=PRECISION)
         return out.view(*x.shape[:-1], N)
 
     @staticmethod
