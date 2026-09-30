@@ -1,32 +1,7 @@
-% ============================================================================
-% S-LoRA (Squared LoRA) — ICLR 2027
-%
-% HAI VIEC PHAI QUYET TRUOC KHI NOP:
-%
-% 1. VA CHAM TEN. "S-LoRA" da duoc Sheng et al. dung tu MLSys 2024
-%    (serving nghin adapter LoRA dong thoi), cung linh vuc, duoc cite nhieu.
-%    Hien file nay cite ho va phan biet bang footnote o Section 1. Doi ten
-%    (SqLoRA / Sq-LoRA) van la lua chon sach hon.
-%
-% 2. PHAM VI BANG CHUNG. Abstract chi noi ve E2E/Qwen2.5-1.5B, nhung
-%    Section 6 bao cao mot ket qua AM tren Mistral-7B/MetaMathQA: o cung ngan
-%    sach 167M, S-LoRA thua LoRA 10.08 diem GSM8K va 8.82 diem MATH. Ket qua
-%    do co that, pipeline da duoc kiem chung (LoRA cua chinh pipeline nay vuot
-%    ca hai con so LoRA cong bo cua PiSSA va PMSS), nen bo no ra la trinh bay
-%    sai bang chung. Neu ban muon paper chi ve E2E thi phai xoa Section 6 VA
-%    sua abstract de noi ro pham vi — khong duoc giu abstract nhu cu ma bo
-%    Section 6.
-%
-% Moi con so trong file nay deu tu run that. Cho nao chua do duoc thi \TODO{}.
-% ============================================================================
 
-\documentclass{article} % For LaTeX2e
+\documentclass{article}
 \usepackage{iclr2027_conference,times}
 
-% Optional math commands from https://github.com/goodfeli/dlbook_notation.
-% Boc trong IfFileExists vi day la file TUY CHON cua template ma ban chua tai
-% ve; bai nay khong dung macro nao trong do. Con iclr2027_conference.sty va
-% .bst thi BAT BUOC — tai ca bo template ve cung thu muc nay.
 \IfFileExists{math_commands.tex}{\input{math_commands.tex}}{}
 
 \usepackage{hyperref}
@@ -38,15 +13,11 @@
 \title{S-LoRA: Squared LoRA via Exact Row-Space\\Factorization for
        Parameter-Efficient Fine-Tuning}
 
-% Authors must not appear in the submitted version. They should be hidden
-% as long as the \iclrfinalcopy macro remains commented out below.
-% Non-anonymous submissions will be rejected without review.
 \author{Hiep Nguyen \\
 Independent Researcher \\
 \texttt{hiepdema26@gmail.com}
 }
 
-%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
 
 \maketitle
@@ -55,7 +26,6 @@ Independent Researcher \\
 Low-rank adaptation (LoRA) has become a standard approach for parameter-efficient fine-tuning (PEFT), but its parameter cost remains proportional to the full dimensions of the adapted weight matrix. This becomes particularly inefficient for the highly non-square projection matrices found in modern architectures, where one dimension may be substantially larger than the other despite the weight itself having limited intrinsic capacity. We introduce \textbf{S-LoRA} (Squared LoRA), a simple reparameterization of LoRA that exploits this asymmetry without discarding any pretrained information. Instead of applying a low-rank update to the original weight, S-LoRA exactly factorizes each non-square weight into a frozen rectangular factor and a square factor initialized from its pretrained values, and performs adaptation exclusively on the square factor. This construction is lossless at initialization, preserves the full pretrained function, and confines the adaptation to the pretrained row space of the original weight. Because the trainable factor is square, S-LoRA reduces the parameter cost of dimension-scaled adapters in proportion to the aspect ratio of the original weight, while the resulting adapted weight can be merged into a single matrix with no additional inference cost. On E2E NLG, fine-tuning only the key and value projections of Qwen2.5-1.5B, S-LoRA reaches $65.2$ BLEU with only $0.057$M trainable parameters, surpassing unconstrained training of the same projections ($64.3$ BLEU with $22.0$M parameters) and matching LoRA's performance with substantially fewer parameters. At matched parameter budgets, S-LoRA improves over LoRA by up to $2.75$ BLEU, with statistically significant gains of $4.0\sigma$, $2.7\sigma$, and $1.3\sigma$ at representative budgets. These results show that exploiting the pretrained geometry of non-square weights provides a simple and effective way to improve the parameter efficiency of LoRA, particularly in the low-budget regime. More broadly, S-LoRA offers a drop-in reparameterization of LoRA that preserves pretrained structure while substantially reducing the cost of adaptation.
 \end{abstract}
 
-% ============================================================== INTRODUCTION
 \section{Introduction}
 
 Adapting a pretrained language model to a downstream task by updating all of
@@ -139,7 +109,6 @@ outside it, and the boundary is not yet characterized.
         where the constraint helps and where it does not.
 \end{itemize}
 
-% ============================================================= RELATED WORK
 \section{Related Work}
 
 \paragraph{Additive low-rank adapters.}
@@ -180,7 +149,6 @@ restructure $\Delta W$, while we restructure the layer that $\Delta W$ attaches
 to --- and composing them with the square factor is straightforward, since any
 adapter that applies to an $n\times m$ weight applies to a $k\times k$ one.
 
-% =================================================================== METHOD
 \section{Method}
 
 \subsection{Notation}
@@ -428,7 +396,6 @@ holds for arbitrary $\Delta W_2$, but the preconditioner reading is only a
 first-order description of the trajectory. Second, under variant (ii) the same
 containment holds with $\Delta W_2$ supplied by the adapter.
 
-% ======================================================== EXPERIMENTS: E2E
 \section{Low-Budget Regime: E2E NLG on Qwen2.5-1.5B}
 \label{sec:e2e}
 
@@ -483,7 +450,6 @@ roughly $65.7$ thereafter. Second, at rank one the constrained model
 \emph{loses} to LoRA, $62.45$ against $62.78$: with a single direction the
 row-space restriction removes capacity faster than it removes noise.
 
-% ================================================= EXPERIMENTS: SCALE (NEG)
 \section{Scaling to 7B: A Negative Result}
 \label{sec:scale}
 
@@ -562,7 +528,6 @@ budget sweep at fixed model and task is the experiment that would separate
 them, and we regard it as the most informative remaining work rather than a
 formality. \TODO{chay sweep 39M/76M/152M/167M, S-LoRA vs LoRA cung ngan sach}
 
-% ============================================================== LIMITATIONS
 \section{Limitations}
 
 The positive evidence comes from a single model, a single task family, and
@@ -594,7 +559,6 @@ Finally, $\rho$ --- the fraction of an unconstrained update that already lies
 in $\operatorname{row}(W_0)$ --- is the quantity that would explain both
 results, and we have not measured it.
 
-% ============================================================== CONCLUSION
 \section{Conclusion}
 
 S-LoRA rewrites a non-square layer as a frozen rectangular factor times a
