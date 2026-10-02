@@ -63,6 +63,32 @@ Two things worth reading off this table beyond the headline:
   and at rank 1 S-LoRA *loses* to LoRA. This is a low-budget instrument, not a universal
   replacement.
 
+### Does the advantage survive scale?
+
+Same task, same two projections, same recipe — fp32, no TF32, 5 epochs, best-epoch
+selection, beam 10, 630 test sentences — across the Qwen2.5 family. One seed per cell.
+
+Three runs per model give both comparisons. Since S-LoRA costs `2kr` where LoRA costs
+`r(n+m)`, the saving is `(1+a)/2`, so S-LoRA at roughly 4× the rank occupies the same
+budget as LoRA r=2:
+
+| Model | `a` | S-LoRA r=2 | S-LoRA (budget-matched) | LoRA r=2 | same rank | same budget |
+|-------|----:|-----------:|------------------------:|---------:|----------:|------------:|
+| 0.5B | 7 | 63.07 (0.025 M) | **64.19** (r=8, 0.098 M) | 62.31 (0.098 M) | **+0.76** | **+1.87** |
+| 1.5B | 6 | 65.22 (0.057 M) | 65.45 (r=8, 0.229 M) | 64.24 (0.201 M) | +0.98 | +1.21 |
+| 3B | 8 | 64.37 (0.074 M) | *running* (r=9) | *running* | — | — |
+
+At 0.5B the budget match is exact: S-LoRA r=8 and LoRA r=2 both cost 0.098 M. At 1.5B it
+is not — S-LoRA r=8 carries 14% *more* budget than LoRA r=2, so that +1.21 is slightly
+flattering; r=7 would have matched. The 3B row uses r=9 rather than r=8 because `a = 8`
+there, making the saving 4.5× and r=8 land 11% *under* LoRA's budget.
+
+**Read these with the error bars in mind.** With one seed the difference of two single
+draws has sd ≈ 0.55 BLEU (from the multi-seed spreads in the table above). So +1.87 is
+~3.4σ and reads; +0.76 is ~1.4σ and does not. Validation loss moves the same way at 0.5B
+(1.1971 for S-LoRA r=8 against 1.2463 for LoRA r=2), which is some comfort that the BLEU
+gap is not a generation artifact, but it is not a second seed.
+
 ### VeRA as a baseline
 
 VeRA needs a learning rate ~500× higher than LoRA (its trainable objects are two vectors,
