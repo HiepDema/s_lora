@@ -74,20 +74,37 @@ budget as LoRA r=2:
 
 | Model | `a` | S-LoRA r=2 | S-LoRA (budget-matched) | LoRA r=2 | same rank | same budget |
 |-------|----:|-----------:|------------------------:|---------:|----------:|------------:|
-| 0.5B | 7 | 63.07 (0.025 M) | **64.19** (r=8, 0.098 M) | 62.31 (0.098 M) | **+0.76** | **+1.87** |
-| 1.5B | 6 | 65.22 (0.057 M) | 65.45 (r=8, 0.229 M) | 64.24 (0.201 M) | +0.98 | +1.21 |
-| 3B | 8 | 64.37 (0.074 M) | *running* (r=9) | *running* | — | — |
+| 0.5B | 7 | 63.07 (0.025 M) | **64.19** (r=8, 0.098 M) | 62.31 (0.098 M) | +0.76 | **+1.87** |
+| 1.5B | 6 | 65.22 (0.057 M) | 65.45 (r=8, 0.229 M) | 64.24 (0.201 M) | +0.98 | **+1.21** |
+| 3B | 8 | 64.37 (0.074 M) | 65.33 (r=9, 0.332 M) | **65.38** (0.332 M) | −1.01 | **−0.05** |
 
-At 0.5B the budget match is exact: S-LoRA r=8 and LoRA r=2 both cost 0.098 M. At 1.5B it
-is not — S-LoRA r=8 carries 14% *more* budget than LoRA r=2, so that +1.21 is slightly
-flattering; r=7 would have matched. The 3B row uses r=9 rather than r=8 because `a = 8`
-there, making the saving 4.5× and r=8 land 11% *under* LoRA's budget.
+**The answer is no.** At matched budget the advantage decays monotonically across a 6×
+range of model size — **+1.87 → +1.21 → −0.05** — and is gone by 3B. The endpoints are
+about 3.5σ apart, so the trend reads even though the individual middle cells do not.
 
-**Read these with the error bars in mind.** With one seed the difference of two single
-draws has sd ≈ 0.55 BLEU (from the multi-seed spreads in the table above). So +1.87 is
-~3.4σ and reads; +0.76 is ~1.4σ and does not. Validation loss moves the same way at 0.5B
-(1.1971 for S-LoRA r=8 against 1.2463 for LoRA r=2), which is some comfort that the BLEU
-gap is not a generation artifact, but it is not a second seed.
+This lines up with what happens further out. On Mistral-7B with MetaMathQA, all seven
+projections adapted at a matched 167 M budget, S-LoRA scores 61.94 on GSM8K against LoRA's
+72.02 — a 10-point deficit, on a pipeline whose LoRA arm *exceeds* both published LoRA
+baselines (69.50 in PiSSA, 67.70 in PMSS), which rules out an implementation fault. Four
+points, one direction: the row-space constraint helps at small scale, stops helping around
+3B, and hurts at 7B.
+
+Two details rather than smoothing them over. At 0.5B and 3B the budget match is exact
+(0.098 M and 0.332 M on both arms); at 1.5B it is not — S-LoRA r=8 carries 14% *more*
+budget than LoRA r=2, so that +1.21 flatters S-LoRA slightly and r=7 would have matched.
+The 3B row uses r=9 rather than r=8 because `a = 8` there, making the saving 4.5×, and
+r=8 would have landed 11% *under* LoRA instead of level.
+
+**Read these with the error bars in mind.** One seed per cell, and from the multi-seed
+spreads in the table above the difference of two single draws has sd ≈ 0.55 BLEU. So
++1.87 is ~3.4σ and reads; +0.76, −1.01 and −0.05 individually do not. The monotone trend
+across three sizes is the claim, not any single cell.
+
+One thing survives the reversal: parameter efficiency. At 3B, S-LoRA r=2 reaches 64.37
+using **0.074 M** against LoRA r=2's 65.38 using **0.332 M** — within a point of LoRA on
+4.5× fewer parameters. And validation loss still favours S-LoRA at 3B (1.1184 against
+1.1371) while BLEU does not, which is why "tied at 3B" is the safer reading than "loses at
+3B".
 
 ### VeRA as a baseline
 
@@ -174,13 +191,28 @@ inference overhead, bit-identical reproducibility across runs at a fixed seed.
 
 Not yet done, in order of importance:
 
-1. **PMSS as a baseline.** It selects rows/columns of `W₀` by the same pivoted-QR criterion
+1. **Measure where the update actually lives.** Run an unconstrained fine-tune and compute
+   `ρ = ‖ΔW·VVᵀ‖²_F / ‖ΔW‖²_F` — the fraction of it already inside `row(W₀)`, against a
+   chance level of `1/a`. This is the one number that would explain both the small-model
+   win and the large-model loss, and it has not been measured at any scale.
+2. **Seeds at the cells the conclusion rests on.** Every cell in the scaling table is one
+   seed, and only +1.87 clears the noise individually. The monotone trend is the claim;
+   confirming it properly needs 2–3 seeds at 0.5B and 3B.
+3. **PMSS as a baseline.** It selects rows/columns of `W₀` by the same pivoted-QR criterion
    and states the same subspace constraint. Without it the novelty claim is unsupported.
-2. A second model on E2E, to separate the method from Qwen.
-3. Official `e2e-metrics` scoring — every BLEU here comes from an in-repo implementation.
-4. Tall-orientation (`gate_proj`/`up_proj`) validation on a modern model.
-5. `--train-x` ablation: freeze `W₂`, train `X`, to show the gain comes from the constraint
-   rather than from merely having a factorization.
+4. `--train-x` ablation: freeze `W₂`, train `X`, to show whatever gain exists comes from
+   the constraint rather than from merely having a factorization.
+5. A non-Qwen model on E2E, to separate the method from this family.
+6. Official `e2e-metrics` scoring — every BLEU here comes from an in-repo implementation.
+   The runs write `*_hyps.txt` / `*_refs.txt` for exactly this.
+7. Tall-orientation (`gate_proj`/`up_proj`) validation on a modern model.
+
+Also unresolved: S-LoRA is **20% slower per optimizer step** than LoRA at matched budget
+(0.090 vs 0.108 it/s on Mistral-7B). The factored forward does the same number of
+multiplies as the dense one; the cost is the column gather, which is memory-bound and
+runs at 30–39% of what the card will give. Folding it into the GEMM was tried and fails —
+it means replacing cuBLAS with a hand-written kernel, which loses by 32×. `torch.compile`
+recovers about a third of the gap. See `slora_kernels.py`.
 
 The name collides with *S-LoRA: Serving Thousands of Concurrent LoRA Adapters*
 (Sheng et al., MLSys 2024), which is unrelated work.
