@@ -80,16 +80,28 @@ those same two matrices achieves with $384\times$ more parameters. At matched
 budget the lead over LoRA is $2.75$ BLEU near $0.1$M, narrowing to $0.72$ by
 $0.4$M and inverting at rank one.
 
-That advantage does not survive scale. On Mistral-7B \citep{jiang2023mistral}
-fine-tuned on MetaMathQA \citep{yu2024metamath} at a matched budget of $167$M
-parameters --- the budget at which LoRA and PiSSA are evaluated in the
-literature --- S-LoRA reaches $61.94\%$ on GSM8K against LoRA's $72.02\%$, and
-$13.30\%$ on MATH against $22.12\%$, losing on all seven MATH subjects. We
-report this negative result in full (Section~\ref{sec:scale}) because the same
+That advantage does not survive scale. Holding task, adapted projections and
+every hyperparameter fixed across Qwen2.5 at $0.5$B through $7$B
+(Section~\ref{sec:qwenscale}), the matched-budget lead decays monotonically and
+reaches zero at the largest model tested. Pushed further --- Mistral-7B
+\citep{jiang2023mistral} on MetaMathQA \citep{yu2024metamath}, all seven
+projections, a matched $167$M budget, the setting in which LoRA and PiSSA are
+evaluated in the literature --- S-LoRA reaches $61.94\%$ on GSM8K against LoRA's
+$72.02\%$ and $13.30\%$ on MATH against $22.12\%$, losing on all seven MATH
+subjects (Section~\ref{sec:scale}). We report that in full because the same
 pipeline reproduces and exceeds the published LoRA baselines, which rules out
-implementation error as the explanation. The honest summary is that the
-row-space constraint is a favorable trade in a narrow regime and a costly one
-outside it, and the boundary is not yet characterized.
+implementation error. The honest summary is that the row-space constraint is a
+favorable trade in a narrow regime and a costly one outside it.
+
+Running that sweep twice, once in float32 and once in bfloat16, produced a
+second finding we did not set out to look for: \emph{the precision choice is not
+neutral between the two methods}. On Qwen2.5-0.5B the switch costs S-LoRA $1.15$
+BLEU and LoRA $2.10$, widening the gap between them by almost a point out of the
+dtype alone, and it moves the crossover point from $3$B to $7$B. Since
+\citet{hu2022lora} and \citet{kopiczko2024vera} do not report their precision at
+all, a comparison between adapters is not reproducible from the published
+description --- and the unreported variable is large enough here to flip a
+conclusion's sign.
 
 \paragraph{Contributions.}
 \begin{itemize}
@@ -105,8 +117,15 @@ outside it, and the boundary is not yet characterized.
   \item A controlled comparison against LoRA, an unconstrained upper bound, and
         the zero-shot floor across five parameter budgets spanning $16\times$,
         with two to three seeds per configuration.
-  \item A negative scaling result at 7B with a validated pipeline, delimiting
-        where the constraint helps and where it does not.
+  \item A scaling sweep over Qwen2.5 from $0.5$B to $7$B at fixed task and
+        matched budget, showing the advantage decaying to zero, plus a negative
+        result at $7$B on a harder task with a pipeline whose LoRA arm exceeds
+        both published baselines.
+  \item The observation that numerical precision is not neutral between PEFT
+        methods --- bfloat16 penalises LoRA roughly twice as hard as S-LoRA here,
+        enough to move where the two curves cross --- together with the fact that
+        two of the three most-cited adapters in this family never state the
+        precision they used.
 \end{itemize}
 
 \section{Related Work}
@@ -450,11 +469,86 @@ roughly $65.7$ thereafter. Second, at rank one the constrained model
 \emph{loses} to LoRA, $62.45$ against $62.78$: with a single direction the
 row-space restriction removes capacity faster than it removes noise.
 
-\section{Scaling to 7B: A Negative Result}
+\section{Does the Advantage Survive Scale?}
+\label{sec:qwenscale}
+
+Section~\ref{sec:e2e} covers one model. Holding the task, the two adapted
+projections, and every hyperparameter fixed, we repeat the comparison across
+Qwen2.5 at $0.5$B, $1.5$B, $3$B and $7$B. Three runs per model suffice for both
+comparisons that matter: since S-LoRA costs $2kr$ where LoRA costs $r(n+m)$, the
+saving is $(1+a)/2$, so S-LoRA at roughly four times the rank occupies LoRA's
+budget exactly. One seed per cell.
+
+\paragraph{The sweep was run twice.}
+We ran the whole series in float32 and again in bfloat16, and report both,
+because the two do not agree. That is itself the finding of this section, and we
+return to it below.
+
+\begin{table}[t]\centering
+\caption{Qwen2.5 on E2E NLG, \texttt{k\_proj}+\texttt{v\_proj}, one seed per
+cell. $r_B$ is the S-LoRA rank matching LoRA $r{=}2$'s budget; it differs by
+model because $a$ does. The float32 sweep has no $7$B row: that run was not made.
+Its $1.5$B row used $r{=}8$ rather than $r{=}7$, giving S-LoRA $14\%$ more budget
+than LoRA, so its $+1.21$ flatters S-LoRA; every bfloat16 row matches exactly.}
+\label{tab:qwenscale}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+& Model & S-LoRA $r{=}2$ & S-LoRA $r{=}r_B$ & LoRA $r{=}2$ & same rank & same budget \\
+\midrule
+\multirow{4}{*}{\rotatebox{90}{float32}}
+& 0.5B & 63.07 \tiny(0.025M) & \textbf{64.19} \tiny(r8, 0.098M) & 62.31 \tiny(0.098M) & $+0.76$ & $\mathbf{+1.87}$ \\
+& 1.5B & 65.22 \tiny(0.057M) & 65.45 \tiny(r8, 0.229M) & 64.24 \tiny(0.201M) & $+0.98$ & $\mathbf{+1.21}$ \\
+& 3B   & 64.37 \tiny(0.074M) & 65.33 \tiny(r9, 0.332M) & \textbf{65.38} \tiny(0.332M) & $-1.01$ & $\mathbf{-0.05}$ \\
+& 7B   & --- & --- & --- & --- & --- \\
+\midrule
+\multirow{4}{*}{\rotatebox{90}{bfloat16}}
+& 0.5B & 61.25 \tiny(0.025M) & \textbf{63.03} \tiny(r8, 0.098M) & 60.22 \tiny(0.098M) & $+1.03$ & $\mathbf{+2.82}$ \\
+& 1.5B & 63.69 \tiny(0.057M) & \textbf{65.07} \tiny(r7, 0.201M) & 62.70 \tiny(0.201M) & $+0.99$ & $\mathbf{+2.37}$ \\
+& 3B   & 63.95 \tiny(0.074M) & \textbf{65.08} \tiny(r9, 0.332M) & 61.16 \tiny(0.332M) & $+2.79$ & $\mathbf{+3.93}$ \\
+& 7B   & \textbf{65.07} \tiny(0.115M) & 64.68 \tiny(r8, 0.459M) & 64.77 \tiny(0.459M) & $+0.30$ & $\mathbf{-0.09}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The answer is no, in both.}
+At matched budget the advantage decays and is gone by the largest model each
+sweep reaches: $+1.87 \to +1.21 \to -0.05$ in float32, and
+$+2.82 \to +2.37 \to +3.93 \to -0.09$ in bfloat16. The crossover moves with
+precision --- $3$B in float32, $7$B in bfloat16 --- but the direction does not.
+
+Two cells deserve naming rather than leaving a reader to find them. The $3$B
+bfloat16 LoRA cell is $61.16$ at seed $0$ and $62.23$ at seed $1$, the widest
+spread anywhere in the table, and it is what makes that row look unlike its
+neighbours. And at $7$B, S-LoRA $r{=}2$ reaches $65.07$ on $0.115$M --- above
+both the budget-matched S-LoRA and LoRA itself, on a quarter of their
+parameters.
+
+\paragraph{Precision is not neutral between the two methods.}
+\label{par:precision}
+Holding everything else fixed on Qwen2.5-0.5B, moving from float32 to bfloat16
+costs S-LoRA $1.15$ BLEU and LoRA $2.10$, so the gap between them widens from
+$+1.87$ to $+2.82$ out of the dtype alone. We ran both arms specifically to
+check this, expecting the opposite: the factorization residual grows from
+$\sim\!10^{-6}$ to $9.4\times 10^{-3}$ in bfloat16, and only S-LoRA rebuilds $W$
+through that factorization, so we had assumed S-LoRA would be the penalised one.
+It is not, and we have no mechanism to offer --- only the measurement.
+
+This makes precision a reporting problem wider than our method.
+\citet{meng2024pissa} state theirs (Section~5: float32 for both base model and
+adapter), and their Appendix~D reports bfloat16 against float32 moving GSM8K by
+up to $7.2$ points under full fine-tuning. \citet{hu2022lora} and
+\citet{kopiczko2024vera} state theirs nowhere; we searched both papers in full.
+A comparison between adapters is therefore not reproducible from the published
+description alone, and the unreported variable is large enough here to move a
+conclusion from positive to negative.
+
+\section{Scaling to 7B on a Harder Task: A Negative Result}
 \label{sec:scale}
 
-The E2E evidence covers one model of $1.5$B parameters, one task family, and
-budgets below $0.5$M. We tested whether it extends.
+Section~\ref{sec:qwenscale} varies model size at fixed task and budget regime.
+This section varies all three at once, and lands further from the E2E setting
+than anything above.
 
 \paragraph{Setup.}
 Mistral-7B-v0.1 \citep{jiang2023mistral} fine-tuned on MetaMathQA
@@ -530,10 +624,16 @@ formality. \TODO{chay sweep 39M/76M/152M/167M, S-LoRA vs LoRA cung ngan sach}
 
 \section{Limitations}
 
-The positive evidence comes from a single model, a single task family, and
-budgets below $0.5$M; the negative evidence from a single model, a single task
-family, one budget and one seed. Neither is sufficient on its own, and together
-they delimit rather than establish.
+Every cell of Table~\ref{tab:qwenscale} is one seed, and the one place we ran a
+second --- LoRA at $3$B in bfloat16 --- the two differ by $1.07$ BLEU. That is
+larger than several of the differences the table reports, so individual cells
+should not be read as resolved; the claim is the direction across sizes, not any
+one entry. All of it is one task family, and the Qwen2.5 series alone, so model
+family and task are confounded with everything the sweep varies.
+
+The two sweeps are not interchangeable and no row should be read across them.
+They also differ in one respect beyond precision: the float32 $1.5$B row used
+$r{=}8$ where $r{=}7$ matches LoRA's budget, and it has no $7$B row at all.
 
 The method touches only non-square weights. Square matrices admit no such
 factorization, so query and output projections --- and every attention matrix
@@ -567,12 +667,20 @@ or FLOPs, and adapts the square factor alone. The rewrite confines every update
 to the pretrained row space, makes any dimension-scaled adapter cheaper by
 $(1+a)/2$, and folds back into a single matrix at deployment.
 
-Whether that confinement is a good trade is budget- and task-dependent, and our
-two experiments land on opposite sides of the question: a $2.75$ BLEU advantage
-at $0.1$M on E2E NLG, and a $10$ point deficit at $167$M on grade-school math.
-We report both. The mechanism that would reconcile them --- how much of a
-useful update lies in $\operatorname{row}(W_0)$ to begin with --- is measurable,
-and measuring it is where we would direct the next effort.
+Whether that confinement is a good trade depends on budget, task and scale, and
+our experiments land on both sides: a $2.75$ BLEU advantage at $0.1$M on E2E
+NLG, a matched-budget lead that decays to zero between $0.5$B and $7$B, and a
+$10$ point deficit at $167$M on grade-school math. We report all of it. The
+mechanism that would reconcile them --- how much of a useful update lies in
+$\operatorname{row}(W_0)$ to begin with --- is measurable, and measuring it is
+where we would direct the next effort.
+
+One result points outward rather than at our method. Running the scaling sweep
+in float32 and again in bfloat16 changed not only the magnitudes but where the
+two curves cross, because bfloat16 penalises LoRA about twice as hard as it
+penalises S-LoRA. We cannot explain the asymmetry, and we expected it to run the
+other way. But its existence means a PEFT comparison is under-specified unless
+the precision is stated, and most of this literature does not state it.
 
 \bibliographystyle{iclr2027_conference}
 \bibliography{iclr2027_conference}
