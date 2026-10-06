@@ -65,22 +65,45 @@ Two things worth reading off this table beyond the headline:
 
 ### Does the advantage survive scale?
 
-Same task, same two projections, same recipe — fp32, no TF32, 5 epochs, best-epoch
-selection, beam 10, 630 test sentences — across the Qwen2.5 family. One seed per cell.
+Same task, same two projections, same recipe — no TF32, 5 epochs, best-epoch selection,
+beam 10, 630 test sentences — across the Qwen2.5 family. One seed per cell. The sweep was
+run twice end to end, once in float32 and once in bfloat16, because the two do not agree.
 
 Three runs per model give both comparisons. Since S-LoRA costs `2kr` where LoRA costs
 `r(n+m)`, the saving is `(1+a)/2`, so S-LoRA at roughly 4× the rank occupies the same
 budget as LoRA r=2:
+
+**float32**
 
 | Model | `a` | S-LoRA r=2 | S-LoRA (budget-matched) | LoRA r=2 | same rank | same budget |
 |-------|----:|-----------:|------------------------:|---------:|----------:|------------:|
 | 0.5B | 7 | 63.07 (0.025 M) | **64.19** (r=8, 0.098 M) | 62.31 (0.098 M) | +0.76 | **+1.87** |
 | 1.5B | 6 | 65.22 (0.057 M) | 65.45 (r=8, 0.229 M) | 64.24 (0.201 M) | +0.98 | **+1.21** |
 | 3B | 8 | 64.37 (0.074 M) | 65.33 (r=9, 0.332 M) | **65.38** (0.332 M) | −1.01 | **−0.05** |
+| 7B | 7 | — | — | — | — | — |
 
-**The answer is no.** At matched budget the advantage decays monotonically across a 6×
-range of model size — **+1.87 → +1.21 → −0.05** — and is gone by 3B. The endpoints are
-about 3.5σ apart, so the trend reads even though the individual middle cells do not.
+**bfloat16**
+
+| Model | `a` | S-LoRA r=2 | S-LoRA (budget-matched) | LoRA r=2 | same rank | same budget |
+|-------|----:|-----------:|------------------------:|---------:|----------:|------------:|
+| 0.5B | 7 | 61.25 (0.025 M) | **63.03** (r=8, 0.098 M) | 60.22 (0.098 M) | +1.03 | **+2.82** |
+| 1.5B | 6 | 63.69 (0.057 M) | **65.07** (r=7, 0.201 M) | 62.70 (0.201 M) | +0.99 | **+2.37** |
+| 3B | 8 | 63.95 (0.074 M) | **65.08** (r=9, 0.332 M) | 61.16 (0.332 M) | +2.79 | **+3.93** |
+| 7B | 7 | **65.07** (0.115 M) | 64.68 (r=8, 0.459 M) | 64.77 (0.459 M) | +0.30 | **−0.09** |
+
+**The answer is no, in both.** At matched budget the advantage decays and is gone by the
+largest model tested in each sweep: **+1.87 → +1.21 → −0.05** in float32, and
+**+2.82 → +2.37 → +3.93 → −0.09** in bfloat16. The point where it vanishes moves with
+precision — 3B in float32, 7B in bfloat16 — but the direction does not.
+
+The budget match is exact in bfloat16 at every size (both arms at 0.098 M, 0.201 M,
+0.332 M, 0.459 M). In float32 at 1.5B it is not: that sweep used r=8, giving S-LoRA 14%
+more budget than LoRA r=2, so its +1.21 flatters S-LoRA. The bfloat16 sweep uses r=7 there,
+which matches exactly.
+
+Two points on the 3B bfloat16 row. Its LoRA cell is 61.16 at seed 0 and 62.23 at seed 1,
+the widest spread anywhere in either table. And at 7B, S-LoRA r=2 reaches 65.07 on 0.115 M
+— above both the budget-matched S-LoRA and LoRA itself, on a quarter of their parameters.
 
 This lines up with what happens further out. On Mistral-7B with MetaMathQA, all seven
 projections adapted at a matched 167 M budget, S-LoRA scores 61.94 on GSM8K against LoRA's
@@ -89,22 +112,21 @@ baselines (69.50 in PiSSA, 67.70 in PMSS), which rules out an implementation fau
 points, one direction: the row-space constraint helps at small scale, stops helping around
 3B, and hurts at 7B.
 
-Two details rather than smoothing them over. At 0.5B and 3B the budget match is exact
-(0.098 M and 0.332 M on both arms); at 1.5B it is not — S-LoRA r=8 carries 14% *more*
-budget than LoRA r=2, so that +1.21 flatters S-LoRA slightly and r=7 would have matched.
-The 3B row uses r=9 rather than r=8 because `a = 8` there, making the saving 4.5×, and
-r=8 would have landed 11% *under* LoRA instead of level.
+**Precision is not neutral between the two methods.** Holding everything else fixed on
+Qwen2.5-0.5B, moving from float32 to bfloat16 costs S-LoRA 1.15 BLEU and LoRA 2.10 — so
+the gap between them widens from +1.87 to +2.82 purely from the dtype. That asymmetry is
+why the two sweeps are reported separately and why no row should be read across them.
 
-**Read these with the error bars in mind.** One seed per cell, and from the multi-seed
-spreads in the table above the difference of two single draws has sd ≈ 0.55 BLEU. So
-+1.87 is ~3.4σ and reads; +0.76, −1.01 and −0.05 individually do not. The monotone trend
-across three sizes is the claim, not any single cell.
+It also makes the precision choice a reporting problem for the field. PiSSA states it
+(Section 5: "Float32 computation type for both the base model and the adapter in LoRA and
+PiSSA"), and its Appendix D shows bf16-vs-fp32 swinging GSM8K by up to 7.2 points on full
+fine-tuning. LoRA (Hu et al.) and VeRA (Kopiczko et al.) do not state it anywhere — both
+papers were searched in full.
 
-One thing survives the reversal: parameter efficiency. At 3B, S-LoRA r=2 reaches 64.37
-using **0.074 M** against LoRA r=2's 65.38 using **0.332 M** — within a point of LoRA on
-4.5× fewer parameters. And validation loss still favours S-LoRA at 3B (1.1184 against
-1.1371) while BLEU does not, which is why "tied at 3B" is the safer reading than "loses at
-3B".
+What survives in both sweeps is parameter efficiency. At 3B in float32, S-LoRA r=2 reaches
+64.37 on **0.074 M** against LoRA's 65.38 on **0.332 M** — within a point on 4.5× fewer
+parameters. Validation loss there still favours S-LoRA (1.1184 against 1.1371) while BLEU
+does not, which is why "tied" is the safer reading than "loses".
 
 ### VeRA as a baseline
 
