@@ -91,6 +91,13 @@ budget as LoRA r=2:
 | 3B | 8 | 63.95 (0.074 M) | **65.08** (r=9, 0.332 M) | 61.16 (0.332 M) | +2.79 | **+3.93** |
 | 7B | 7 | **65.07** (0.115 M) | 64.68 (r=8, 0.459 M) | 64.77 (0.459 M) | +0.30 | **−0.09** |
 
+![S-LoRA against LoRA across Qwen2.5 sizes on E2E NLG in bfloat16: absolute BLEU for the
+three configurations, and the matched-budget gap against model size for both precisions](paper/fig_qwen_scale.png)
+
+Left: absolute BLEU in bfloat16. Right: the matched-budget gap against model size, with
+the float32 sweep dashed for comparison — it has no 7B point. Regenerate with
+`python paper/fig_qwen_scale.py`, which reads the result JSON directly.
+
 **The answer is no, in both.** At matched budget the advantage decays and is gone by the
 largest model tested in each sweep: **+1.87 → +1.21 → −0.05** in float32, and
 **+2.82 → +2.37 → +3.93 → −0.09** in bfloat16. The point where it vanishes moves with
