@@ -45,6 +45,10 @@ def main():
     p.add_argument("--factorize-device", default="auto")
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--save-dtype", default="bf16", choices=["bf16", "fp16", "fp32"])
+    p.add_argument("--rebuild-dtype", default="fp32", choices=["fp32", "bf16", "fp16"],
+                   help="dtype dung lai model truoc khi gop. Phai KHOP voi "
+                        "--model-dtype cua run train, neu khong adapter se duoc "
+                        "gop len mot phan ra khac voi luc train.")
     a = p.parse_args()
 
     a.targets = TARGETS[a.target_set]
@@ -52,10 +56,18 @@ def main():
     a.rank_square = a.rank if a.rank_square is None else a.rank_square
     a.alpha_square = a.rank_square if a.alpha_square is None else a.alpha_square
     a.dtype = torch.float64          # phan ra luon fp64
-    a.model_dtype = "fp32"           # gop trong fp32 roi moi ha xuong khi luu
+    # Dung lai model o DUNG dtype da train. Mac dinh fp32 (hanh vi cu), nhung
+    # neu run train o bf16 thi PHAI dat bf16: adapter da duoc toi uu tren cap
+    # (C, X) da lam tron bf16, sai so ~1e-2. Gop no len mot phan ra fp32 chinh
+    # xac hon se ra mot model KHAC model da train — va lech do chi xay ra voi
+    # rowspace/hybrid, con lora khong he co phan ra, nen no lam lech dung vao
+    # phep so sanh.
+    a.model_dtype = a.rebuild_dtype
     a.attn = "auto"
     a.grad_ckpt = False
     a.vera_d_init = 0.1
+    a.seed = 0                       # VeRA lay ma tran chung tu seed nay
+    a.verify_tol = 1e-4              # gop o fp32 nen giu nguong chat
 
     print(f"  dung lai model: {a.method} r={a.rank}", flush=True)
     model, _ = E.build_model(a)
