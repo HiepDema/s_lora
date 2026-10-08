@@ -474,8 +474,17 @@ def main():
     if a.load_ckpt:
         res["loaded"] = E.load_trainable_ckpt(a.load_ckpt, model, a.device)
     elif a.method != "none":
+        # Do VRAM dinh RIENG cho pha train. Can vi voi vocab lon (Gemma: 262k)
+        # thi tensor logits moi la thu an bo nho, khong phai trong so, nen
+        # khong the suy batch an toan tu kich thuoc model.
+        if str(a.device).startswith("cuda"):
+            torch.cuda.reset_peak_memory_stats()
         res["train"] = E.train(model, data, val_data, tok, a)     # pairs=None
         res["final_loss"] = res["train"]["final_loss"]
+        if str(a.device).startswith("cuda"):
+            res["vram_train_gb"] = torch.cuda.max_memory_allocated() / 2**30
+            print(f"    VRAM dinh khi train: {res['vram_train_gb']:.2f} GB "
+                  f"(batch {a.batch} x accum {a.accum})", flush=True)
     if tests:
         res["after"] = evaluate(model, tok, tests, a, tag)
     if mtests:
@@ -508,7 +517,9 @@ def main():
             targets=",".join(a.targets), dataset="metamathqa->gsm8k",
             max_train=a.max_train, only_gsm=a.only_gsm, tf32=bool(a.tf32),
             lr=a.lr, lr_schedule=a.lr_schedule, epochs_planned=a.epochs,
-            setup_s=res["setup_s"], **res.get("after", {}), **res.get("train", {}),
+            setup_s=res["setup_s"], vram_train_gb=res.get("vram_train_gb"),
+            batch=a.batch, accum=a.accum,
+            **res.get("after", {}), **res.get("train", {}),
             **({"after_math": res["after_math"]} if "after_math" in res else {}),
             **({"before": res["before"]} if "before" in res else {}),
             **({"before_math": res["before_math"]} if "before_math" in res else {}),

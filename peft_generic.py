@@ -44,8 +44,15 @@ TARGETS = {
 
 
 def get_blocks(model):
-    """Tra ve ModuleList cac transformer block, bat ke kien truc."""
-    for path in ("transformer.h", "model.layers", "model.decoder.layers"):
+    """Tra ve ModuleList cac transformer block, bat ke kien truc.
+
+    Hai duong cuoi la cho checkpoint da phuong thuc (Gemma 3 4B/12B/27B,
+    Llava...): thap ngon ngu nam duoi language_model, nen "model.layers" khong
+    bat duoc. Thu tu quan trong — "model.layers" phai dung TRUOC, vi o ban
+    text-only thi duong do moi la duong dung.
+    """
+    for path in ("transformer.h", "model.layers", "model.decoder.layers",
+                 "model.language_model.layers", "language_model.model.layers"):
         obj = model
         try:
             for p in path.split("."):
