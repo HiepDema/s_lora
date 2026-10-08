@@ -23,14 +23,23 @@ import metamath_eval as MM
 from finetune_math import PROMPT, load_gsm8k, load_math, last_boxed, extract_gold
 
 
-def run(llm, sp, tests, kind, tag, out_dir):
+def run(llm, sp, tests, kind, tag, out_dir, tok=None, add_bos=False):
     """vLLM tu lo continuous batching nen KHONG can tu xep theo do dai."""
     name = "MATH" if kind == "math" else "GSM8K"
     off = MM.score_math if kind == "math" else MM.score_gsm8k
     getg = last_boxed if kind == "math" else extract_gold
 
+    # Tu tokenize thay vi dua text tho: dua text tho thi vLLM dung
+    # add_special_tokens=True, tuc THEM <bos>. Voi Gemma dieu do lech khoi
+    # finetune_math.py, von dung add_special_tokens=bool(--add-bos). Do duoc
+    # tren mot checkpoint: lech BOS lam so cau thieu nhan "The answer is: "
+    # tang tu 81 len 296 tren 1319 bai GSM8K, keo diem tu 7.81% xuong 4.32%.
+    prompts = [{"prompt_token_ids": tok(PROMPT.format(q=q),
+                                        add_special_tokens=add_bos).input_ids}
+               for q, _ in tests]
+
     t0 = time.perf_counter()
-    outs = llm.generate([PROMPT.format(q=q) for q, _ in tests], sp)
+    outs = llm.generate(prompts, sp)
     el = time.perf_counter() - t0
 
     recs, hit = [], 0
@@ -68,11 +77,18 @@ def main():
     p.add_argument("--limit-eval", type=int, default=None)
     p.add_argument("--max-new-tokens", type=int, default=512)
     p.add_argument("--gpu-frac", type=float, default=0.90)
-    p.add_argument("--max-len", type=int, default=1024,
-                   help="prompt 512 + sinh 512; de sat giup vLLM xep nhieu seq hon")
+    p.add_argument("--max-len", type=int, default=2048,
+                   help="TONG prompt + sinh. 1024 lam vLLM nem VLLMValidationError "
+                        "va bo ca lo: 2/5000 de MATH dai hon 1024 token (max 1432).")
+    p.add_argument("--add-bos", action="store_true",
+                   help="them <bos> dau prompt. PHAI khop --add-bos cua run train, "
+                        "neu khong Gemma se bi lech phan phoi ngay token dau.")
     a = p.parse_args()
     a.tag = a.tag or os.path.basename(a.model.rstrip("/\\"))
     a.out_dir = a.out_dir or f"runs_vllm/{a.tag}"
+
+    from transformers import AutoTokenizer
+    tok = AutoTokenizer.from_pretrained(a.model)
 
     from vllm import LLM, SamplingParams
     llm = LLM(model=a.model, dtype="bfloat16", gpu_memory_utilization=a.gpu_frac,
@@ -85,12 +101,12 @@ def main():
         t = load_gsm8k()
         if a.limit_eval:
             t = t[:a.limit_eval]
-        res["gsm8k"] = run(llm, sp, t, "gsm8k", a.tag, a.out_dir)
+        res["gsm8k"] = run(llm, sp, t, "gsm8k", a.tag, a.out_dir, tok, a.add_bos)
     if a.eval_math:
         t = load_math()
         if a.limit_eval:
             t = t[:a.limit_eval]
-        res["math"] = run(llm, sp, t, "math", a.tag, a.out_dir)
+        res["math"] = run(llm, sp, t, "math", a.tag, a.out_dir, tok, a.add_bos)
 
     os.makedirs(a.out_dir, exist_ok=True)
     with open(f"{a.out_dir}/{a.tag}_vllm.json", "w", encoding="utf-8") as f:
