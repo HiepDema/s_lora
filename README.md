@@ -163,24 +163,48 @@ training examples against E2E's 42.1 K — 3 epochs is 23 499 optimizer steps ag
 | S-LoRA r=4 (same rank) | 0.106 M | 33.36 | 54.23 | 1.1610 | 1.0547 |
 | **S-LoRA r=11 (same budget)** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
 
-**Gemma 3 4B** (`a`=2.5, lr 1e-4; the learning-rate section below explains why not 2e-4)
+**Gemma 3 4B** (`a`=2.5, lr 2e-4)
 
 | Config | Params | BLEU-4 | ROUGE-L | val loss | train loss |
 |--------|-------:|-------:|--------:|---------:|-----------:|
-| LoRA r=4 | 0.975 M | 38.34 | 57.33 | 1.0485 | 0.9453 |
-| **S-LoRA r=7 (same budget)** | 0.975 M | **38.66** | **58.19** | 0.9812 | 0.7932 |
+| **LoRA r=4** | 0.975 M | **39.12** | 57.89 | 1.0164 | 0.8855 |
+| S-LoRA r=4 (same rank) | 0.557 M | 37.39 | **58.19** | 0.9898 | 0.8150 |
+| S-LoRA r=7 (same budget) | 0.975 M | 36.42 | 56.99 | 0.9735 | 0.7406 |
 
-Budgets match exactly on both models. At 1B the matched-budget gap is **+2.68 BLEU**, well
-clear of the ~1.07 BLEU seed noise measured in the Qwen sweep, and S-LoRA at the *same rank*
-beats LoRA by 1.04 on 36% of the parameters. At 4B the gap is **+0.32**, which is inside
-that noise band: the honest reading there is that the two are indistinguishable, not that
-S-LoRA wins.
+Budgets match exactly on both models. The matched-budget gap is **+2.68 BLEU at 1B** and
+**−2.70 at 4B** — the sign flips, which is the same direction the Qwen sweep showed but
+arriving much earlier. At 1B, S-LoRA at the *same rank* also beats LoRA by 1.04 on 36% of
+the parameters.
 
-Two things not to over-read. Both 1B rows use lr 2e-4, which is not S-LoRA's best
-learning rate at 4B, so the +2.68 has not been separated into a row-space effect and a
-learning-rate effect. And S-LoRA fits better than LoRA in every single cell of both tables, on
-both train and validation loss, including cells where its BLEU is lower; likelihood and
-generation quality come apart here.
+The 4B row does not hold up on its own, for two separate reasons.
+
+**It is sensitive to the learning rate, and LoRA is not.** Repeating the matched-budget
+pair at three learning rates, everything else fixed:
+
+| lr | LoRA r=4 | S-LoRA r=7 | gap |
+|----|---------:|-----------:|----:|
+| 1e-4 | 38.34 | 38.66 | +0.32 |
+| 2e-4 | 38.37 | 37.02 | −1.35 |
+| 4e-4 | 38.34 | 36.60 | −1.74 |
+| span | 0.03 | 2.06 | |
+
+LoRA moves 0.03 BLEU across a 4× change; S-LoRA moves 2.06, monotonically. At each
+method's own best rate the two are level at 4B rather than 2.7 apart. The last Results section of this
+page works through why.
+
+**It does not reproduce across software stacks.** The 2e-4 pair was re-run on a rebuilt
+box as a check, giving 38.37 and 37.02 against the 39.12 and 36.42 above — same seed, same
+configuration, gap halved from −2.70 to −1.35, and the two methods moved in opposite
+directions. Both shifts sit inside the ~1.07 BLEU seed noise measured in the Qwen sweep.
+
+So 4B should be read as *unresolved*, somewhere between −2.70 and +0.32 depending on which
+nuisance variable is held how. The 1B result is four times the noise and is not affected
+by either problem — though its rows also use the shared 2e-4, so the +2.68 has likewise not
+been separated into a row-space effect and a learning-rate effect.
+
+One pattern is clean across all of it: S-LoRA fits better than LoRA in every single cell of
+both tables, on both train and validation loss, including the cells where its BLEU is
+lower. Likelihood and generation quality come apart here.
 
 ### VeRA as a baseline
 
@@ -204,46 +228,27 @@ from the LoRA paper. The current comparison therefore favours VeRA.
 
 ### Sensitivity to the learning rate
 
-The 4B numbers above use lr 1e-4 rather than the 2e-4 used everywhere else, because the
-two methods respond to it differently. Sweeping it separately for each, everything else
-held fixed (Gemma 3 4B, DART, matched 0.975 M budget, one seed):
+Why the 4B learning-rate table above looks the way it does. Training the square factor is
+exactly preconditioned gradient descent on the original weight,
+`ΔW = −η (∂L/∂W)(PᵀP)`, so S-LoRA's effective step is larger than its nominal learning
+rate suggests — and across that whole grid it was overshooting, which is why its curve
+falls monotonically while LoRA's is flat to within 0.03 BLEU. The preconditioner is a
+property of the parameterization, so this is expected rather than a surprise; what was not
+expected is how large it is relative to the effect being measured.
 
-| lr | LoRA r=4 | S-LoRA r=7 | gap |
-|----|---------:|-----------:|----:|
-| 1e-4 | 38.34 | 38.66 | +0.32 |
-| 2e-4 | 38.37 | 37.02 | −1.35 |
-| 4e-4 | 38.34 | 36.60 | −1.74 |
-| span | 0.03 | 2.06 | |
+Two limits on that sweep. 1e-4 is the **edge of the grid** for S-LoRA, so 38.66 is a lower
+bound on what it reaches at 4B rather than its best. And the same-rank S-LoRA r=4 point was
+only measured at 2e-4, so the three-row table covers the matched-budget pair only.
 
-LoRA moves by 0.03 BLEU across a 4× change; S-LoRA by 2.06, monotonically. That is the
-preconditioner analysis turning up in a measurement: training the square factor is exactly
-preconditioned gradient descent on the original weight, `ΔW = −η (∂L/∂W)(PᵀP)`, so S-LoRA's
-effective step is larger than its nominal learning rate suggests, and it was overshooting
-at every point in this grid.
+The scope is wider than one table. Every LoRA–S-LoRA comparison in this README uses a
+shared learning rate, including both Qwen sweeps and the Mistral math result. A shared rate
+rescales the effective step of one method and not the other, so how much of those gaps
+survives per-method tuning is untested — in either direction.
 
-Read at one shared learning rate, 4B looks like a 1.35 BLEU deficit; read at each method's
-own best, the two are level. Worth noting rather than concluding from: +0.32 is inside the
-seed-noise band, and 1e-4 is the edge of the grid for S-LoRA, so 38.66 is a lower bound.
-The same-rank S-LoRA r=4 point at 4B was only measured at 2e-4 (37.39) and is left out
-above rather than quoted at the wrong learning rate.
+The stack discrepancy noted at 4B has no explanation either. It does not separate a genuine
+framework effect from run-to-run nondeterminism at fixed seed, since both shifts are inside
+the noise band; it does mean a single-seed gap of that size is not worth building on.
 
-The scope of this is wider than the one table. Every LoRA–S-LoRA comparison in this README
-uses a shared learning rate, including both Qwen sweeps and the Mistral math result. How
-much of those gaps survives per-method tuning is untested in either direction.
-
-A reproducibility note, found while checking the above. The 2e-4 pair was re-run on a
-rebuilt box to confirm the old and new software stacks agreed. They do not, and not
-symmetrically:
-
-| lr 2e-4, seed 0, identical config | LoRA r=4 | S-LoRA r=7 | gap |
-|---|---:|---:|---:|
-| torch 2.13.0+cu130 | 39.12 | 36.42 | −2.70 |
-| torch 2.6.0+cu124 | 38.37 | 37.02 | −1.35 |
-
-Half the measured deficit moved with the framework version. Both shifts (−0.75, +0.60) sit
-inside the seed-noise band, so this does not separate a genuine stack effect from
-run-to-run nondeterminism; either way a single-seed gap of that size at 4B is not something
-to build on. The 1B result is four times the noise and is unaffected.
 
 ## Install
 
