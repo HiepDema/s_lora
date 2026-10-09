@@ -7,6 +7,13 @@
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{amsmath,amssymb,booktabs,graphicx,microtype,xcolor,multirow}
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
 
 \newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
 
@@ -33,7 +40,7 @@ its weights is rarely practical, and the field has converged on a common
 answer: keep $W_0$ frozen and learn a small additive correction. LoRA
 \citep{hu2022lora} parameterizes that correction as a rank-$r$ product $BA$;
 the many variants that followed change how $B$ and $A$ are initialized
-\citep{meng2024pissa,wang2024milora}, decomposed \citep{liu2024dora},
+\citep{meng2024pissa,wang2025milora}, decomposed \citep{liu2024dora},
 allocated \citep{zhang2023adalora}, or shared
 \citep{kopiczko2024vera,balazy2024loraxs}, but they all inherit the same
 additive skeleton $W_0 + \Delta W$. The cost of every such adapter is
@@ -136,7 +143,7 @@ LoRA \citep{hu2022lora} descends from adapter layers
 the observation that fine-tuning updates have low intrinsic dimension
 \citep{aghajanyan2021intrinsic}. Subsequent work keeps the additive form and
 varies its ingredients: PiSSA \citep{meng2024pissa} initializes $B,A$ from the
-principal singular directions of $W_0$ and MiLoRA \citep{wang2024milora} from
+principal singular directions of $W_0$ and MiLoRA \citep{wang2025milora} from
 the minor ones; DoRA \citep{liu2024dora} separates magnitude from direction;
 AdaLoRA \citep{zhang2023adalora} reallocates rank across layers; VeRA
 \citep{kopiczko2024vera} freezes random $B,A$ and trains only scaling vectors;
@@ -309,6 +316,9 @@ alignment to $W_0$ would keep, in expectation, only a $1/a$ fraction of its
 squared Frobenius norm. The quantity the constraint must beat is accordingly
 $\rho=\|\Delta W\,VV^{\top}\|_F^2/\|\Delta W\|_F^2$ measured on an unconstrained
 fine-tune, against a chance level of $1/a$ ($0.167$ at $a=6$).
+Section~\ref{sec:gap} sharpens this: what the matched-rank loss gap depends on
+is not $\rho$ over the whole of $\Delta W$ but the same ratio restricted to the
+top-$r$ spectrum of the gradient.
 \TODO{do $\rho$ tren target-ft Qwen2.5-1.5B va tren full-FT Mistral-7B — day
 la phep do giai thich truc tiep ket qua am o Section 6}
 
@@ -414,6 +424,211 @@ under Adam the containment~\eqref{eq:constraint} still holds exactly, since it
 holds for arbitrary $\Delta W_2$, but the preconditioner reading is only a
 first-order description of the trajectory. Second, under variant (ii) the same
 containment holds with $\Delta W_2$ supplied by the adapter.
+
+\subsection{What the constraint costs at matched rank}
+\label{sec:gap}
+The containment~\eqref{eq:constraint} is an identity about representable
+weights. This section converts it into a statement about the loss. At matched
+rank the training loss of S-LoRA can never fall below LoRA's; for a single
+linear layer the shortfall admits a closed form, and that form names precisely
+which part of the gradient the constraint discards. Throughout, $V\in
+\mathbb{R}^{m\times k}$ has orthonormal columns spanning
+$\operatorname{row}(W_0)$, so $VV^{\top}$ is the orthogonal projector onto it
+and $\mathbb{R}^{m}=\operatorname{row}(W_0)\oplus\operatorname{row}(W_0)^{\perp}$.
+
+\paragraph{The two feasible sets.}
+Fix a layer with $m>n$, so $k=n$; the $n>m$ case is the transpose of everything
+below. Write
+\begin{equation}
+  \mathcal{L}_r=\bigl\{\Delta\in\mathbb{R}^{n\times m}:\operatorname{rank}\Delta\le r\bigr\},
+  \qquad
+  \mathcal{S}_r=\bigl\{\Delta\in\mathcal{L}_r:\Delta\,(I-VV^{\top})=0\bigr\}
+  \label{eq:sets}
+\end{equation}
+for the corrections the two methods can represent. That $\mathcal{S}_r$ is
+exactly, and not merely approximately, what S-LoRA reaches is the content of:
+
+\begin{lemma}\label{lem:exact}
+Under variant \textup{(ii)} the set
+$\bigl\{\tfrac{\alpha}{r}BAP:B\in\mathbb{R}^{k\times r},A\in\mathbb{R}^{r\times k}\bigr\}$
+of representable corrections equals $\mathcal{S}_r$.
+\end{lemma}
+
+\begin{proof}
+($\subseteq$) Any such product has rank at most $r$, and its rows lie in
+$\operatorname{row}(P)=\operatorname{row}(W_0)$.
+($\supseteq$) Let $\Delta\in\mathcal{S}_r$. Since $P$ has full row rank $k$ and
+$\operatorname{row}(P)=\operatorname{row}(W_0)$, we have $P^{+}P=VV^{\top}$. Put
+$M=\tfrac{r}{\alpha}\Delta P^{+}\in\mathbb{R}^{k\times k}$, so
+$\operatorname{rank}M\le\operatorname{rank}\Delta\le r$ and $M=BA$ for some
+$B\in\mathbb{R}^{k\times r}$, $A\in\mathbb{R}^{r\times k}$. Then
+$\tfrac{\alpha}{r}BAP=\Delta P^{+}P=\Delta VV^{\top}=\Delta$.
+\end{proof}
+
+\begin{proposition}[Nesting]\label{prop:nest}
+$\mathcal{S}_r\subseteq\mathcal{L}_r$, with equality if and only if $k=m$.
+Consequently, for any loss $L$, any depth, and any nonlinearity,
+\begin{equation}
+  \min_{\Delta\in\mathcal{S}_r}L(W_0+\Delta)\;\ge\;\min_{\Delta\in\mathcal{L}_r}L(W_0+\Delta).
+  \label{eq:nest}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Containment is immediate from Lemma~\ref{lem:exact} and~\eqref{eq:sets}, and a
+minimum over a subset is never smaller. Equality of the sets holds iff $VV^{\top}=I$, i.e.\ iff
+$\operatorname{row}(W_0)=\mathbb{R}^{m}$, i.e.\ iff $k=m$. For a network, the
+hypothesis class is the product over adapted layers of the per-layer sets, so
+it is again a subset and~\eqref{eq:nest} is unchanged.
+\end{proof}
+
+Proposition~\ref{prop:nest} is the whole of the ``never better'' claim, and it
+costs nothing: no assumption on the data, the loss, or the optimizer. What it
+does not give is the \emph{size} of the shortfall, which is where the
+orthogonal decomposition earns its place.
+
+\paragraph{One linear layer.}
+Take $N$ examples $x_i\in\mathbb{R}^{m}$, $y_i\in\mathbb{R}^{n}$, stacked as
+$X\in\mathbb{R}^{m\times N}$ and $Y\in\mathbb{R}^{n\times N}$, and the squared
+loss $L(W)=\tfrac{1}{2N}\|WX-Y\|_F^2$. Write $R=Y-W_0X$ for the residual at
+initialization and
+\begin{equation}
+  \Sigma=\tfrac1N XX^{\top}\succ0,
+  \qquad
+  \Gamma=\tfrac1N RX^{\top}=-\left.\frac{\partial L}{\partial W}\right|_{W_0},
+\end{equation}
+so that $\Gamma$ is the \emph{negative} gradient at initialization --- the sign
+opposite to $G$ of Section~\ref{sec:acct}. Expanding $W=W_0+\Delta$,
+\begin{equation}
+  L(\Delta)=\tfrac12\langle\Delta,\Delta\Sigma\rangle-\langle\Delta,\Gamma\rangle+\tfrac{1}{2N}\|R\|_F^2 .
+  \label{eq:quad}
+\end{equation}
+Let $\widetilde\Gamma=\Gamma\Sigma^{-1/2}$, and let
+$\widetilde V\in\mathbb{R}^{m\times k}$ have orthonormal columns spanning
+$\Sigma^{1/2}\operatorname{row}(W_0)$. When $\Sigma=I$ these reduce to $\Gamma$
+and $V$.
+
+\begin{theorem}[Exact gap at matched rank]\label{thm:gap}
+With $L_{\mathrm{S}}^{\star}$ and $L_{\mathrm{L}}^{\star}$ the minima
+of~\eqref{eq:quad} over $\mathcal{S}_r$ and $\mathcal{L}_r$,
+\begin{equation}
+  L_{\mathrm{S}}^{\star}-L_{\mathrm{L}}^{\star}
+  \;=\;\frac12\sum_{j=1}^{r}\Bigl[\sigma_j(\widetilde\Gamma)^2-\sigma_j(\widetilde\Gamma\widetilde V\widetilde V^{\top})^2\Bigr]\;\ge\;0 ,
+  \label{eq:gap}
+\end{equation}
+where $\sigma_1\ge\sigma_2\ge\cdots$ are singular values.
+\end{theorem}
+
+\begin{proof}
+Substituting $\widetilde\Delta=\Delta\Sigma^{1/2}$ into~\eqref{eq:quad} gives
+$L=\tfrac12\|\widetilde\Delta-\widetilde\Gamma\|_F^2+\mathrm{const}$, because
+$\langle\Delta,\Delta\Sigma\rangle=\|\widetilde\Delta\|_F^2$ and
+$\langle\widetilde\Delta,\widetilde\Gamma\rangle=\langle\Delta,\Gamma\rangle$.
+As $\Sigma^{1/2}$ is invertible the substitution preserves rank, and
+$\Delta=\Delta VV^{\top}$ holds iff
+$\widetilde\Delta=\widetilde\Delta\widetilde V\widetilde V^{\top}$; so the two
+feasible sets map onto their tilde analogues.
+
+For LoRA, Eckart--Young gives
+$2L_{\mathrm{L}}^{\star}=\sum_{j>r}\sigma_j(\widetilde\Gamma)^2+\mathrm{const}$.
+
+For S-LoRA, every feasible $\widetilde\Delta$ satisfies
+$\widetilde\Delta=\widetilde\Delta\widetilde V\widetilde V^{\top}$, so
+decomposing along
+$\mathbb{R}^{m}=\Sigma^{1/2}\operatorname{row}(W_0)\oplus(\Sigma^{1/2}\operatorname{row}(W_0))^{\perp}$
+and using that the two components are Frobenius-orthogonal,
+\begin{equation}
+  \|\widetilde\Delta-\widetilde\Gamma\|_F^2
+  =\underbrace{\bigl\|\widetilde\Delta-\widetilde\Gamma\widetilde V\widetilde V^{\top}\bigr\|_F^2}_{\text{depends on }\widetilde\Delta}
+  +\underbrace{\bigl\|\widetilde\Gamma(I-\widetilde V\widetilde V^{\top})\bigr\|_F^2}_{\text{constant}} .
+  \label{eq:pythagoras}
+\end{equation}
+The second term is untouchable: no choice of parameters moves it. The first is
+minimized by the rank-$r$ truncation of $\widetilde\Gamma\widetilde
+V\widetilde V^{\top}$, which is itself feasible, since the right singular
+vectors belonging to its nonzero singular values lie in its own row space.
+Hence
+$2L_{\mathrm{S}}^{\star}=\sum_{j>r}\sigma_j(\widetilde\Gamma\widetilde V\widetilde V^{\top})^2+\|\widetilde\Gamma(I-\widetilde V\widetilde V^{\top})\|_F^2+\mathrm{const}$.
+Subtracting, and substituting
+$\|\widetilde\Gamma(I-\widetilde V\widetilde V^{\top})\|_F^2=\sum_{j}\sigma_j(\widetilde\Gamma)^2-\sum_{j}\sigma_j(\widetilde\Gamma\widetilde V\widetilde V^{\top})^2$,
+the tail sums cancel and~\eqref{eq:gap} remains. Non-negativity follows from
+$\sigma_j(AB)\le\sigma_j(A)\|B\|_2$ with $\|\widetilde V\widetilde V^{\top}\|_2=1$.
+\end{proof}
+
+\begin{corollary}\label{cor:gap}
+(i) If $W_0$ is square and nonsingular the gap is exactly zero for every $r$.
+(ii) The gap is non-decreasing in $r$.
+(iii) If $\widetilde\Gamma$ is isotropic, $\mathbb{E}\|\widetilde\Gamma
+\widetilde V\widetilde V^{\top}\|_F^2/\mathbb{E}\|\widetilde\Gamma\|_F^2=k/m=1/a$.
+\end{corollary}
+
+\begin{proof}
+(i) $k=m$ forces $\widetilde V\widetilde V^{\top}=I$, so every summand
+in~\eqref{eq:gap} vanishes. (ii) Each summand is non-negative. (iii) The
+projector has rank $k$ in an $m$-dimensional ambient space.
+\end{proof}
+
+Part~(i) is a sharp, cheap test of the whole account: Qwen2.5 has a square
+$q_{\mathrm{proj}}$ at every size, so \emph{all} of S-LoRA's matched-rank
+deficit must originate in the non-square projections. Part~(iii) fixes the
+reference level for $\rho$: chance is $1/a$, not $0$, and
+Theorem~\ref{thm:gap} says the quantity that matters is $\rho$ restricted to
+the top-$r$ spectrum of the gradient rather than its full Frobenius mass.
+
+\paragraph{Why the observed gap is stable.}
+Theorem~\ref{thm:gap} compares optima. Training curves are not optima, yet the
+gap we observe between the two methods is close to constant over most of a run.
+The linearized regime explains this.
+
+\begin{proposition}[Gap along the trajectory]\label{prop:flow}
+Let $\Sigma=I$, let $r=k$, and let both methods follow gradient flow
+on~\eqref{eq:quad} from $\Delta(0)=0$ --- S-LoRA within the linear space
+$\{\Delta:\Delta(I-VV^{\top})=0\}$. Then for all $t\ge0$
+\begin{equation}
+  L_{\mathrm{S}}(t)-L_{\mathrm{L}}(t)=\tfrac12\bigl\|\Gamma(I-VV^{\top})\bigr\|_F^2\bigl(1-e^{-2t}\bigr).
+  \label{eq:flow}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+With $\Sigma=I$, $\nabla L=\Delta-\Gamma$ and the unconstrained flow
+$\dot\Delta=-(\Delta-\Gamma)$ gives $\Delta(t)=(1-e^{-t})\Gamma$. On the linear
+subspace the gradient is the projection of $\nabla L$, so
+$\dot\Delta=-(\Delta-\Gamma)VV^{\top}=-\Delta+\Gamma VV^{\top}$, giving
+$\Delta(t)=(1-e^{-t})\Gamma VV^{\top}$. Substituting each into
+$L=\tfrac12\|\Delta-\Gamma\|_F^2+\mathrm{const}$ and splitting the S-LoRA
+residual $-e^{-t}\Gamma VV^{\top}-\Gamma(I-VV^{\top})$ into its two orthogonal
+components yields
+$2L_{\mathrm{L}}(t)=e^{-2t}\|\Gamma\|_F^2$ and
+$2L_{\mathrm{S}}(t)=e^{-2t}\|\Gamma VV^{\top}\|_F^2+\|\Gamma(I-VV^{\top})\|_F^2$
+up to the same constant. Their difference is~\eqref{eq:flow}, using
+$\|\Gamma\|_F^2=\|\Gamma VV^{\top}\|_F^2+\|\Gamma(I-VV^{\top})\|_F^2$.
+\end{proof}
+
+The gap therefore starts at zero, rises monotonically, and saturates at exactly
+the untouchable term of~\eqref{eq:pythagoras} --- after
+which it is flat, which is the regime a training curve spends almost all of its
+length in. Appendix~\ref{app:numeric} verifies Theorem~\ref{thm:gap},
+Corollary~\ref{cor:gap} and Proposition~\ref{prop:flow} numerically against an
+independent optimizer, and finds that gradient descent on the factored
+parameters reaches $97\%$ of the asymptotic gap within $200$ steps.
+
+\begin{remark}[Scope]\label{rem:scope}
+Three limits are worth stating plainly. First, only
+Proposition~\ref{prop:nest} survives depth and nonlinearity intact;
+Theorem~\ref{thm:gap} and Proposition~\ref{prop:flow} describe one linear layer,
+and apply to a deep network only to the extent that its linearization does.
+Second, Proposition~\ref{prop:flow} assumes gradient flow on $\Delta$ itself;
+the factored parameterizations of LoRA and S-LoRA induce different implicit
+dynamics, so a per-step ordering of the two curves is not implied by any result
+here. Third, and most important for reading Sections~\ref{sec:e2e}
+and~\ref{sec:qwenscale}: all of the above is stated at \emph{matched rank},
+where S-LoRA is also the smaller model ($2rk$ against $rk(1+a)$ parameters).
+Under the matched-\emph{budget} comparison used in our experiments the two
+feasible sets are not nested, Proposition~\ref{prop:nest} does not apply, and
+the sign of the gap is an empirical question --- which is the question those
+sections ask.
+\end{remark}
 
 \section{Low-Budget Regime: E2E NLG on Qwen2.5-1.5B}
 \label{sec:e2e}
@@ -681,6 +896,82 @@ two curves cross, because bfloat16 penalises LoRA about twice as hard as it
 penalises S-LoRA. We cannot explain the asymmetry, and we expected it to run the
 other way. But its existence means a PEFT comparison is under-specified unless
 the precision is stated, and most of this literature does not state it.
+
+\appendix
+
+\section{Numerical verification of Section~\ref{sec:gap}}
+\label{app:numeric}
+Every claim of Section~\ref{sec:gap} was checked against an optimizer that
+knows nothing about the spectral formula. Inputs are drawn Gaussian and then
+whitened \emph{exactly}, so $\Sigma$ equals its nominal value rather than
+approximating it; targets come from a teacher $W_0+\Delta_{\mathrm{true}}$ with
+$\Delta_{\mathrm{true}}$ random, so that the update the layer must learn has no
+built-in alignment with $\operatorname{row}(W_0)$. The reference optima are
+obtained by alternating least squares from eight random restarts, which uses
+only two linear solves per iteration and never forms a singular value.
+
+\begin{table}[h]
+\centering
+\caption{Theorem~\ref{thm:gap} against alternating least squares,
+$n=8$, $m=32$, $N=2\times10^4$. ``measured'' is
+$L_{\mathrm{S}}^{\star}-L_{\mathrm{L}}^{\star}$ from the independent optimizer;
+``predicted'' is the right-hand side of~\eqref{eq:gap}.}
+\label{tab:gapcheck}
+\begin{tabular}{llrrrrr}
+\toprule
+ & $r$ & $L_{\mathrm{L}}^{\star}$ & $L_{\mathrm{S}}^{\star}$ & measured & predicted & $|\text{diff}|$ \\
+\midrule
+\multirow{2}{*}{seed 1} & 2 & 2.80346 & 3.69849 & $+0.89503$ & $+0.89503$ & $3\!\times\!10^{-16}$ \\
+                        & 4 & 1.97030 & 3.44748 & $+1.47719$ & $+1.47719$ & $2\!\times\!10^{-15}$ \\
+\multirow{2}{*}{seed 2} & 2 & 3.43333 & 4.28955 & $+0.85622$ & $+0.85622$ & $7\!\times\!10^{-16}$ \\
+                        & 4 & 2.15404 & 3.90797 & $+1.75393$ & $+1.75393$ & $2\!\times\!10^{-16}$ \\
+\midrule
+\multicolumn{7}{l}{\emph{Non-identity input covariance,} $r=4$, seed 7:}\\
+$\kappa(\Sigma)=10$    & 4 &   4.83841 &  12.53178 & $+7.69336$   & $+7.69336$   & $3\!\times\!10^{-15}$ \\
+$\kappa(\Sigma)=10^2$  & 4 &  28.25898 &  82.14416 & $+53.88518$  & $+53.88518$  & $9\!\times\!10^{-14}$ \\
+$\kappa(\Sigma)=10^3$  & 4 & 246.89969 & 721.89300 & $+474.99330$ & $+474.99330$ & $7\!\times\!10^{-13}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In Table~\ref{tab:gapcheck} agreement is at machine precision across input
+conditioning spanning three orders of magnitude, confirming that~\eqref{eq:gap}
+is exact and not a whitened-data special case. Corollary~\ref{cor:gap}(i) was checked separately
+at $n=m=24$: for $r\in\{2,6,12\}$ the measured gap is at most
+$4\times10^{-15}$, i.e.\ zero.
+
+\begin{table}[h]
+\centering
+\caption{Gradient descent on the factored parameters, $n=8$, $m=32$, $r=4$,
+identical initialization ($\Delta=0$) and learning rate for both methods. The
+asymptotic gap predicted by~\eqref{eq:gap} is $1.918798$.}
+\label{tab:gdcheck}
+\begin{tabular}{rrrrr}
+\toprule
+step & $L_{\mathrm{LoRA}}$ & $L_{\text{S-LoRA}}$ & gap & \% of asymptote \\
+\midrule
+      0 & 4.823581 & 4.823581 & $+0.000000$ &   $0.0$ \\
+     10 & 4.357673 & 4.649026 & $+0.291353$ &  $15.2$ \\
+     50 & 2.826520 & 4.331540 & $+1.505020$ &  $78.4$ \\
+    200 & 2.259699 & 4.120529 & $+1.860830$ &  $97.0$ \\
+   1000 & 2.146143 & 4.063201 & $+1.917059$ &  $99.9$ \\
+   5000 & 2.144318 & 4.063116 & $+1.918798$ & $100.0$ \\
+  20000 & 2.144318 & 4.063116 & $+1.918798$ & $100.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:gdcheck} is the practical form of
+Proposition~\ref{prop:flow}: although the proposition is stated for gradient
+flow on $\Delta$ and full rank, descent on the factored parameters at rank $4$
+reaches $97\%$ of the asymptotic gap by step $200$ and is flat thereafter. A
+training curve therefore spends essentially its whole length in the saturated
+regime, which is why the gap between the two methods reads as a constant offset
+rather than a widening or closing one.
+
+Closed-form checks of Proposition~\ref{prop:flow} itself, evaluated along the
+exact flow at $\Sigma=I$, match~\eqref{eq:flow} to $9\times10^{-16}$ at every
+$t\in\{0.1,0.25,0.5,1,2,4,8\}$.
 
 \bibliographystyle{iclr2027_conference}
 \bibliography{iclr2027_conference}
