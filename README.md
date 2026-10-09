@@ -135,6 +135,53 @@ What survives in both sweeps is parameter efficiency. At 3B in float32, S-LoRA r
 parameters. Validation loss there still favours S-LoRA (1.1184 against 1.1371) while BLEU
 does not, which is why "tied" is the safer reading than "loses".
 
+### A second family and a second task: Gemma 3 on DART
+
+The Qwen sweep varies one thing the earlier tables could not separate. Qwen2.5 has a
+**square `q_proj` at every size**, and on a square weight S-LoRA and LoRA span the same set
+exactly, so those layers contribute nothing to any gap. Gemma 3 fixes `head_dim` at 256
+independently of hidden size, so **no projection in it is square** — the aspect ratio of
+`k_proj`/`v_proj` is 4.5 at 1B and 2.5 at 4B, against 6–8 across Qwen.
+
+DART rather than E2E because E2E is spent: it had already flattened to −0.05 at Qwen 3B.
+DART is the same task family and the same metric — both are in the original LoRA paper's
+GPT-2 suite — but harder, and far from saturated here. (MetaMathQA/GSM8K was tried first
+and abandoned: at this budget, kv-only with 0.1–18 M parameters cannot install reasoning,
+and every configuration landed between 3.75% and 8.00% against the model's own reported
+38.4. The adapter can teach surface form, not arithmetic.)
+
+Setup: `k_proj`+`v_proj` only, bfloat16, max-len 256, 3 epochs, best-epoch selection, beam
+10, 1500 unique test inputs, one seed. Three epochs rather than five because DART has 62.7 K
+training examples against E2E's 42.1 K — 3 epochs is 23 499 optimizer steps against E2E's
+26 290, so the two match on *steps*, which five epochs would not.
+
+**Gemma 3 1B** (`a`=4.5, lr 2e-4)
+
+| Config | Params | BLEU-4 | ROUGE-L | val loss | train loss |
+|--------|-------:|-------:|--------:|---------:|-----------:|
+| LoRA r=4 | 0.293 M | 32.32 | 52.91 | 1.2236 | 1.1717 |
+| S-LoRA r=4 (same rank) | 0.106 M | 33.36 | 54.23 | 1.1610 | 1.0547 |
+| **S-LoRA r=11 (same budget)** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
+
+**Gemma 3 4B** (`a`=2.5, lr 1e-4; the learning-rate section below explains why not 2e-4)
+
+| Config | Params | BLEU-4 | ROUGE-L | val loss | train loss |
+|--------|-------:|-------:|--------:|---------:|-----------:|
+| LoRA r=4 | 0.975 M | 38.34 | 57.33 | 1.0485 | 0.9453 |
+| **S-LoRA r=7 (same budget)** | 0.975 M | **38.66** | **58.19** | 0.9812 | 0.7932 |
+
+Budgets match exactly on both models. At 1B the matched-budget gap is **+2.68 BLEU**, well
+clear of the ~1.07 BLEU seed noise measured in the Qwen sweep, and S-LoRA at the *same rank*
+beats LoRA by 1.04 on 36% of the parameters. At 4B the gap is **+0.32**, which is inside
+that noise band: the honest reading there is that the two are indistinguishable, not that
+S-LoRA wins.
+
+Two things not to over-read. Both 1B rows use lr 2e-4, which is not S-LoRA's best
+learning rate at 4B, so the +2.68 has not been separated into a row-space effect and a
+learning-rate effect. And S-LoRA fits better than LoRA in every single cell of both tables, on
+both train and validation loss, including cells where its BLEU is lower; likelihood and
+generation quality come apart here.
+
 ### VeRA as a baseline
 
 VeRA needs a learning rate ~500× higher than LoRA (its trainable objects are two vectors,
@@ -154,6 +201,49 @@ matrix. Fewer trainable parameters does not mean less compute.
 
 Note that LoRA and S-LoRA have never had their learning rate swept; both use 2e-4 borrowed
 from the LoRA paper. The current comparison therefore favours VeRA.
+
+### Sensitivity to the learning rate
+
+The 4B numbers above use lr 1e-4 rather than the 2e-4 used everywhere else, because the
+two methods respond to it differently. Sweeping it separately for each, everything else
+held fixed (Gemma 3 4B, DART, matched 0.975 M budget, one seed):
+
+| lr | LoRA r=4 | S-LoRA r=7 | gap |
+|----|---------:|-----------:|----:|
+| 1e-4 | 38.34 | 38.66 | +0.32 |
+| 2e-4 | 38.37 | 37.02 | −1.35 |
+| 4e-4 | 38.34 | 36.60 | −1.74 |
+| span | 0.03 | 2.06 | |
+
+LoRA moves by 0.03 BLEU across a 4× change; S-LoRA by 2.06, monotonically. That is the
+preconditioner analysis turning up in a measurement: training the square factor is exactly
+preconditioned gradient descent on the original weight, `ΔW = −η (∂L/∂W)(PᵀP)`, so S-LoRA's
+effective step is larger than its nominal learning rate suggests, and it was overshooting
+at every point in this grid.
+
+Read at one shared learning rate, 4B looks like a 1.35 BLEU deficit; read at each method's
+own best, the two are level. Worth noting rather than concluding from: +0.32 is inside the
+seed-noise band, and 1e-4 is the edge of the grid for S-LoRA, so 38.66 is a lower bound.
+The same-rank S-LoRA r=4 point at 4B was only measured at 2e-4 (37.39) and is left out
+above rather than quoted at the wrong learning rate.
+
+The scope of this is wider than the one table. Every LoRA–S-LoRA comparison in this README
+uses a shared learning rate, including both Qwen sweeps and the Mistral math result. How
+much of those gaps survives per-method tuning is untested in either direction.
+
+A reproducibility note, found while checking the above. The 2e-4 pair was re-run on a
+rebuilt box to confirm the old and new software stacks agreed. They do not, and not
+symmetrically:
+
+| lr 2e-4, seed 0, identical config | LoRA r=4 | S-LoRA r=7 | gap |
+|---|---:|---:|---:|
+| torch 2.13.0+cu130 | 39.12 | 36.42 | −2.70 |
+| torch 2.6.0+cu124 | 38.37 | 37.02 | −1.35 |
+
+Half the measured deficit moved with the framework version. Both shifts (−0.75, +0.60) sit
+inside the seed-noise band, so this does not separate a genuine stack effect from
+run-to-run nondeterminism; either way a single-seed gap of that size at 4B is not something
+to build on. The 1B result is four times the noise and is unaffected.
 
 ## Install
 
@@ -231,10 +321,15 @@ Not yet done, in order of importance:
    and states the same subspace constraint. Without it the novelty claim is unsupported.
 4. `--train-x` ablation: freeze `W₂`, train `X`, to show whatever gain exists comes from
    the constraint rather than from merely having a factorization.
-5. A non-Qwen model on E2E, to separate the method from this family.
-6. Official `e2e-metrics` scoring — every BLEU here comes from an in-repo implementation.
+5. More of the Gemma line. Two sizes on DART is not a curve, and `a` falls with model
+   size there (4.5 → 2.5 → 1.875), so size and aspect ratio are still confounded. The
+   clean separation is one model, two target sets: at 4B, `k_proj`/`v_proj` has `a`=2.5
+   while the MLP has `a`=4.0.
+6. Per-method learning rates for the comparisons that predate the 4B sweep. Shared-lr
+   numbers rescale only one of the two methods; see the last Results section.
+7. Official `e2e-metrics` scoring — every BLEU here comes from an in-repo implementation.
    The runs write `*_hyps.txt` / `*_refs.txt` for exactly this.
-7. Tall-orientation (`gate_proj`/`up_proj`) validation on a modern model.
+8. Tall-orientation (`gate_proj`/`up_proj`) validation on a modern model.
 
 Also unresolved: S-LoRA is **20% slower per optimizer step** than LoRA at matched budget
 (0.090 vs 0.108 it/s on Mistral-7B). The factored forward does the same number of

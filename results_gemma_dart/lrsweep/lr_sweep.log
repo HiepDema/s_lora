@@ -1,0 +1,25 @@
+##### QUET LR 4B  2026-10-09 10:04:52
+##### lan truoc (torch 2.13): LoRA r4 lr2e-4 = 39.12 | S-LoRA r7 = 36.42
+### ===== lr=2e-4  10:04:52
+=== lora r=4 lr=2e-4  bat dau 10:04:52
+=== lora r=4 lr=2e-4 ket thuc rc=0  11:21:18
+    [lora_r4_na_s0]  BLEU-4 = 38.37   ROUGE-L = 57.63   (1500 cau)
+=== rowspace r=7 lr=2e-4  bat dau 11:21:18
+=== rowspace r=7 lr=2e-4 ket thuc rc=0  12:43:55
+    [rowspace_r7_colperm_s0]  BLEU-4 = 37.02   ROUGE-L = 57.92   (1500 cau)
+### ===== lr=1e-4  12:43:56
+=== lora r=4 lr=1e-4  bat dau 12:43:56
+=== lora r=4 lr=1e-4 ket thuc rc=0  14:01:06
+    [lora_r4_na_s0]  BLEU-4 = 38.34   ROUGE-L = 57.33   (1500 cau)
+=== rowspace r=7 lr=1e-4  bat dau 14:01:06
+=== rowspace r=7 lr=1e-4 ket thuc rc=0  15:21:37
+    [rowspace_r7_colperm_s0]  BLEU-4 = 38.66   ROUGE-L = 58.19   (1500 cau)
+### ===== lr=4e-4  15:21:39
+=== lora r=4 lr=4e-4  bat dau 15:21:39
+=== lora r=4 lr=4e-4 ket thuc rc=0  16:38:40
+    [lora_r4_na_s0]  BLEU-4 = 38.34   ROUGE-L = 58.03   (1500 cau)
+=== rowspace r=7 lr=4e-4  bat dau 16:38:40
+=== rowspace r=7 lr=4e-4 ket thuc rc=0  18:00:51
+    [rowspace_r7_colperm_s0]  BLEU-4 = 36.60   ROUGE-L = 57.52   (1500 cau)
+##### QUET XONG 2026-10-09 18:00:54
+-rw-rw-r-- 1 ubuntu ubuntu 19M Oct  9 18:00 /home/ubuntu/lrsweep_4b.tar.gz

@@ -1,0 +1,269 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== lora_r32_na_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4477.14it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.5s]
+
+  train: 19782 vi du, 155 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/155  loss 0.8759  lr 5.86e-06  0.40 it/s  ETA 2m
+[W1008 17:13:45.298034950 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 21561344, total: 42405855232).
+[W1008 17:13:46.312134319 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3339255808, total: 42405855232).
+    [ep 0] val loss 0.7391  ppl 2.094  train 1.0512  gap -0.3121  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.25 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 12.50%)  (2s)
+
+    [lora_r32_na_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                      (ham tu viet: 12.50%, lech +12.50)
+    canh bao: 1 cau khong trich duoc so nao (12.5%)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/lora_r32_na_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== rowspace_r32_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4297.35it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (1s)
+    18/26 block  (1s)
+    24/26 block  (1s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 0.852 M (0.0851 % cua 1000.74 M)   [3.1s]
+
+  train: 19782 vi du, 155 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/155  loss 0.7521  lr 5.86e-06  0.37 it/s  ETA 2m
+[W1008 17:21:16.012982034 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 107544576, total: 42405855232).
+[W1008 17:21:17.878968799 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3389587456, total: 42405855232).
+    [ep 0] val loss 0.6244  ppl 1.867  train 0.8218  gap -0.1974  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.11 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r32_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    canh bao: 1 cau khong trich duoc so nao (12.5%)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r32_colperm_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== rowspace_r88_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4250.16it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (0s)
+    18/26 block  (0s)
+    24/26 block  (0s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.9s]
+
+  train: 19782 vi du, 155 buoc, lr=2e-05 (cosine), batch=8
+    ep 0 step 100/155  loss 0.7188  lr 5.86e-06  0.37 it/s  ETA 3m
+[W1008 17:28:48.340488452 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 59310080, total: 42405855232).
+[W1008 17:28:49.204155874 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3299409920, total: 42405855232).
+    [ep 0] val loss 0.5933  ppl 1.810  train 0.7582  gap -0.1650  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.14 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r88_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r88_colperm_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== lora_r32_na_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4428.26it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.4s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0001 (cosine), batch=8
+    ep 0 step 100/155  loss 0.7221  lr 2.93e-05  0.40 it/s  ETA 2m
+[W1008 17:35:45.614450534 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 21561344, total: 42405855232).
+[W1008 17:35:46.625893463 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3345547264, total: 42405855232).
+    [ep 0] val loss 0.6030  ppl 1.828  train 0.7688  gap -0.1658  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.25 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [lora_r32_na_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                      (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/lora_r32_na_s0.json
+
+=== rowspace_r32_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4267.04it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (0s)
+    18/26 block  (0s)
+    24/26 block  (0s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 0.852 M (0.0851 % cua 1000.74 M)   [2.0s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0001 (cosine), batch=8
+    ep 0 step 100/155  loss 0.6606  lr 2.93e-05  0.37 it/s  ETA 3m
+[W1008 17:43:15.454888860 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 94961664, total: 42405855232).
+[W1008 17:43:16.321415654 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3341352960, total: 42405855232).
+    [ep 0] val loss 0.5417  ppl 1.719  train 0.6675  gap -0.1258  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.11 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r32_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r32_colperm_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== rowspace_r88_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4326.71it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (0s)
+    18/26 block  (0s)
+    24/26 block  (0s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.9s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0001 (cosine), batch=8
+    ep 0 step 100/155  loss 0.6384  lr 2.93e-05  0.36 it/s  ETA 3m
+[W1008 17:50:52.369891790 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 59310080, total: 42405855232).
+[W1008 17:50:53.234190628 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3299409920, total: 42405855232).
+    [ep 0] val loss 0.5193  ppl 1.681  train 0.6320  gap -0.1128  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.14 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r88_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r88_colperm_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== lora_r32_na_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4480.09it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.5s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0003 (cosine), batch=8
+    ep 0 step 100/155  loss 0.6604  lr 8.79e-05  0.40 it/s  ETA 2m
+[W1008 17:57:47.334795505 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 21561344, total: 42405855232).
+[W1008 17:57:48.349530617 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3345547264, total: 42405855232).
+    [ep 0] val loss 0.5408  ppl 1.717  train 0.6647  gap -0.1240  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.25 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [lora_r32_na_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                      (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/lora_r32_na_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== rowspace_r32_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4541.96it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (0s)
+    18/26 block  (0s)
+    24/26 block  (0s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 0.852 M (0.0851 % cua 1000.74 M)   [1.9s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0003 (cosine), batch=8
+    ep 0 step 100/155  loss 0.6210  lr 8.79e-05  0.37 it/s  ETA 3m
+[W1008 18:05:19.924667372 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 94961664, total: 42405855232).
+[W1008 18:05:20.790078764 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3341352960, total: 42405855232).
+    [ep 0] val loss 0.5038  ppl 1.655  train 0.5937  gap -0.0899  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.11 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r32_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r32_colperm_s0.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== rowspace_r88_colperm_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap MetaMathQA...
+  train 19782 | val 200 | GSM8K 8 | MATH 0
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 4354.27it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+  phan ra tren cuda
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    6/26 block  (0s)
+    12/26 block  (0s)
+    18/26 block  (0s)
+    24/26 block  (0s)
+  kiem phan ra: sai so dau ra lon nhat 1.15e-02 (h.9.self_attn.k_proj)
+
+  TRAIN DUOC: 2.343 M (0.2338 % cua 1002.23 M)   [1.9s]
+
+  train: 19782 vi du, 155 buoc, lr=0.0003 (cosine), batch=8
+    ep 0 step 100/155  loss 0.6028  lr 8.79e-05  0.37 it/s  ETA 2m
+[W1008 18:12:47.273888473 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2533359616 bytes (free: 59310080, total: 42405855232).
+[W1008 18:12:48.140752910 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4286578688 bytes (free: 3299409920, total: 42405855232).
+    [ep 0] val loss 0.4851  ppl 1.624  train 0.5515  gap -0.0664  (4s)  <- tot nhat
+    VRAM dinh khi train: 17.14 GB (batch 8 x accum 16)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      8/8  MetaMath 0.00%  (tu viet 0.00%)  (2s)
+
+    [rowspace_r88_colperm_s0]  GSM8K accuracy = 0.00%  (0/8, 2s)   <- MetaMath is_equiv, dung de so voi PiSSA/PMSS
+                               (ham tu viet: 0.00%, lech +0.00)
+    8 cau thieu nhan 'The answer is: ' (100.0%) — MetaMath tinh SAI het, khong co duong lui
+
+  ket qua -> probe_lr/rowspace_r88_colperm_s0.json

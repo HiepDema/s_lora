@@ -1,0 +1,10 @@
+### auto_run bat dau 2026-10-08 17:15:40
+### quet lr xong: 9/9 cau hinh 18:13:41
+### lr da chon: LORA=0.0003  S32=0.0003  SBM=0.0003
+# lora_32        2e-05:0.7391  0.0001:0.6030  0.0003:0.5408   -> 0.0003 BIEN-LUOI
+# rowspace_32    2e-05:0.6244  0.0001:0.5417  0.0003:0.5038   -> 0.0003 BIEN-LUOI
+# rowspace_88    2e-05:0.5933  0.0001:0.5193  0.0003:0.4851   -> 0.0003 BIEN-LUOI
+### bat dau chuoi chinh 2026-10-08 18:13:41
+=== g3_1b / lora r=32 lr=0.0003  bat dau 18:13:41
+=== g3_1b / lora r=32 xong 21:19:06  rc=0
+=== g3_1b / rowspace r=32 lr=0.0003  bat dau 21:19:06
