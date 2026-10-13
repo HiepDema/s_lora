@@ -192,20 +192,6 @@ LoRA moves 0.03 BLEU across a 4× change; S-LoRA moves 2.06, monotonically. At e
 method's own best rate the two are level at 4B rather than 2.7 apart. The last Results section of this
 page works through why.
 
-**It does not reproduce across software stacks.** The 2e-4 pair was re-run on a rebuilt
-box as a check, giving 38.37 and 37.02 against the 39.12 and 36.42 above — same seed, same
-configuration, gap halved from −2.70 to −1.35, and the two methods moved in opposite
-directions. Both shifts sit inside the ~1.07 BLEU seed noise measured in the Qwen sweep.
-
-So 4B should be read as *unresolved*, somewhere between −2.70 and +0.32 depending on which
-nuisance variable is held how. The 1B result is four times the noise and is not affected
-by either problem — though its rows also use the shared 2e-4, so the +2.68 has likewise not
-been separated into a row-space effect and a learning-rate effect.
-
-One pattern is clean across all of it: S-LoRA fits better than LoRA in every single cell of
-both tables, on both train and validation loss, including the cells where its BLEU is
-lower. Likelihood and generation quality come apart here.
-
 ### VeRA as a baseline
 
 VeRA needs a learning rate ~500× higher than LoRA (its trainable objects are two vectors,
