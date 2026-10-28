@@ -1,0 +1,59 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Repo card metadata block was not found. Setting CardData to empty.
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 8967.92it/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+(a) PHAN RA TUNG LAYER  (sai so tuong doi, Frobenius)
+layer                 orient  res fp64  res bf16  max|X|  ||X||2   cond W2  fwd Lin  fwd fac fac/Lin    fac32
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 8791.51it/s]
+  hybrid: S-LoRA r=73 (non-square) + LoRA r=32 (square)...
+    8/32 blocks  (16s)
+    16/32 blocks  (32s)
+    24/32 blocks  (47s)
+    32/32 blocks  (63s)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+    hybrid: 128 S-LoRA (r=73), 32 square LoRA (r=32)
+
+(b) CA MODEL, 256 vi du train, teacher forcing
+  [goc] loss response 2.0776 | KL(goc||m) 0.0000 | top1 trung goc 100.0% | token dap an: loss 1.030, dung 53.5% | du doan pho bien [('1', 136), ('2', 57), ('3', 16), (' false', 14), (' answer', 2), (' true', 1)]
+  [hybrid B=0] loss response 2.0859 | KL(goc||m) 0.0031 | top1 trung goc 96.7% | token dap an: loss 1.020, dung 53.1% | du doan pho bien [('1', 127), ('2', 67), ('3', 15), (' false', 14), (' answer', 2), (' true', 1)]
+
+(c) CHECKPOINT DA TRAIN
+  [hybrid da train] loss response 0.1263 | KL(goc||m) 19.2268 | top1 trung goc 55.4% | token dap an: loss 0.873, dung 45.6% | du doan pho bien [('1', 204), (' true', 15), ('2', 4), (' answer', 2), ('4', 1)]
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=16) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+  do lon delta theo loai layer (trung binh tren cac layer)
+    self_attn.q_proj dW/W (LoRA)                   tb 3.626e-02  max 3.010e-01
+    self_attn.k_proj dW/W                          tb 3.779e-01  max 1.245e+00
+    self_attn.k_proj khuech dai ||dW||/||dC||      tb 1.744e+01  max 1.927e+01
+    self_attn.k_proj dC/C                          tb 1.948e-02  max 1.050e-01
+    self_attn.k_proj max|A|,|B|                    tb 1.172e-01  max 1.177e-01
+    self_attn.v_proj dW/W                          tb 1.275e+00  max 4.178e+00
+    self_attn.v_proj khuech dai ||dW||/||dC||      tb 1.870e+01  max 2.237e+01
+    self_attn.v_proj dC/C                          tb 6.163e-02  max 3.706e-01
+    self_attn.v_proj max|A|,|B|                    tb 1.172e-01  max 1.172e-01
+    mlp.up_proj dW/W                               tb 1.484e+01  max 4.061e+01
+    mlp.up_proj khuech dai ||dW||/||dC||           tb 1.671e+02  max 2.438e+02
+    mlp.up_proj dC/C                               tb 8.683e-02  max 3.057e-01
+    mlp.up_proj max|A|,|B|                         tb 1.180e-01  max 1.211e-01
+    mlp.down_proj dW/W                             tb 3.186e+00  max 7.796e+00
+    mlp.down_proj khuech dai ||dW||/||dC||         tb 2.698e+01  max 4.240e+01
+    mlp.down_proj dC/C                             tb 1.279e-01  max 3.702e-01
+    mlp.down_proj max|A|,|B|                       tb 1.179e-01  max 1.206e-01
+
+  chuoi sinh (greedy)
+    [boolq] gold='false'      sinh='the correct answer is true'
+    [boolq] gold='true'       sinh='the correct answer is true'
+    [piqa] gold='solution1'  sinh='the correct answer is solution1'
+    [piqa] gold='solution2'  sinh='the correct answer is solution1'
+    [ARC-Easy] gold='answer1'    sinh='the correct answer is answer1'
+    [ARC-Easy] gold='answer2'    sinh='the correct answer is answer1'
+    [hellaswag] gold='ending4'    sinh='the correct answer is ending1'
+    [hellaswag] gold='ending4'    sinh='the correct answer is ending1'

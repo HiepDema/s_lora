@@ -29,7 +29,8 @@ import urllib.request
 import torch
 import torch.nn as nn
 
-from peft_generic import TARGETS, apply_lora, convert_rowspace, merge_all, param_counts
+from peft_generic import (TARGETS, apply_hybrid, apply_lora, convert_rowspace,
+                          merge_all, param_counts)
 
 TRAIN_REPO = "zwhe99/commonsense_170k"
 GH = ("https://raw.githubusercontent.com/AGI-Edgerunners/LLM-Adapters/main/dataset/"
@@ -147,8 +148,12 @@ def evaluate(model, tok, tests, a):
             tok.truncation_side = "left"
             enc = tok(prompts, return_tensors="pt", padding=True, truncation=True,
                       max_length=a.eval_max_len, add_special_tokens=False).to(a.device)
-            out = model.generate(**enc, max_new_tokens=a.max_new_tokens, num_beams=1,
-                                 do_sample=False, pad_token_id=tok.eos_token_id)
+            # LLM-Adapters/DoRA cham bang beam search 4 nhanh (num_beams=4, khong
+            # sample). Mac dinh van la greedy cho nhanh; --eval-beams 4 de so
+            # dung voi cac so co dau * trong bang cua DoRA / MoC.
+            out = model.generate(**enc, max_new_tokens=a.max_new_tokens,
+                                 num_beams=a.eval_beams, do_sample=False,
+                                 pad_token_id=tok.eos_token_id)
             for j, r in enumerate(ch):
                 gen = tok.decode(out[j, enc.input_ids.shape[1]:], skip_special_tokens=True)
                 ok += extract(gen, task) == str(r["answer"]).strip().lower()
@@ -211,36 +216,58 @@ def bench_model(model, a, prefix=""):
 def train(model, data, tok, a):
     tp = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
-    steps = math.ceil(len(data) / a.batch) * a.epochs
+    accum = getattr(a, "grad_accum", 1)
+    micro_per_epoch = math.ceil(len(data) / a.batch)
+    steps = math.ceil(micro_per_epoch / accum) * a.epochs
     warm = min(a.warmup, steps // 10)
     sched = torch.optim.lr_scheduler.LambdaLR(
         opt, lambda s: s / max(warm, 1) if s < warm
         else max(0.0, (steps - s) / max(steps - warm, 1)))
     lossf = nn.CrossEntropyLoss(ignore_index=-100, label_smoothing=a.label_smoothing)
 
-    print(f"\n  train: {len(data)} vi du, {steps} buoc, lr={a.lr}, batch={a.batch}")
+    eff_batch = a.batch * accum
+    print(f"\n  train: {len(data)} vi du, {steps} optimizer steps, lr={a.lr}, "
+          f"batch={a.batch}x{accum}={eff_batch}")
     if str(a.device).startswith("cuda"):
         torch.cuda.reset_peak_memory_stats()
     model.train()
-    step, t0, run = 0, time.perf_counter(), None
+    step, micro, t0, run = 0, 0, time.perf_counter(), None
+    # Cham giua chung: greedy, vai tram cau moi tac vu, de bat som model sup
+    # (loss response di ngang van co the la model chi hoc khuon cau tra loi).
+    mid, a_mid = [], argparse.Namespace(**vars(a) | dict(limit_eval=a.eval_limit_mid,
+                                                          eval_beams=1))
     for ep in range(a.epochs):
         for bidx in make_batches(data, a.batch):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
             ids, lab, att = ids.to(a.device), lab.to(a.device), att.to(a.device)
             lg = model(input_ids=ids, attention_mask=att).logits
             loss = lossf(lg[:, :-1].reshape(-1, lg.shape[-1]), lab[:, 1:].reshape(-1))
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(tp, 1.0)
-            opt.step()
-            sched.step()
-            opt.zero_grad(set_to_none=True)
+            (loss / accum).backward()
             run = loss.item() if run is None else 0.98 * run + 0.02 * loss.item()
-            step += 1
-            if step % a.log_every == 0:
-                el = time.perf_counter() - t0
-                print(f"    ep {ep} step {step}/{steps}  loss {run:.4f}  "
-                      f"lr {sched.get_last_lr()[0]:.2e}  {step / el:.2f} it/s  "
-                      f"ETA {(steps - step) / max(step / el, 1e-9) / 60:.0f}m", flush=True)
+            micro += 1
+            if micro % accum == 0:
+                torch.nn.utils.clip_grad_norm_(tp, 1.0)
+                opt.step()
+                sched.step()
+                opt.zero_grad(set_to_none=True)
+                step += 1
+                if step % a.log_every == 0:
+                    el = time.perf_counter() - t0
+                    print(f"    ep {ep} step {step}/{steps}  loss {run:.4f}  "
+                          f"lr {sched.get_last_lr()[0]:.2e}  {step / el:.2f} it/s  "
+                          f"ETA {(steps - step) / max(step / el, 1e-9) / 60:.0f}m",
+                          flush=True)
+                if a.eval_every and step % a.eval_every == 0:
+                    r = evaluate(model, tok, a.tests, a_mid)
+                    mid.append(dict(step=step, loss=run, **r))
+                    print(f"    >> step {step} cham giua chung ({a.eval_limit_mid} cau/tac vu, "
+                          f"greedy): TB {r['avg']:.2f}%", flush=True)
+                    model.train()
+    if micro % accum != 0:
+        torch.nn.utils.clip_grad_norm_(tp, 1.0)
+        opt.step()
+        opt.zero_grad(set_to_none=True)
+        step += 1
     el = time.perf_counter() - t0
     vram = (torch.cuda.max_memory_allocated() / 2**30
             if str(a.device).startswith("cuda") else 0.0)
@@ -253,37 +280,67 @@ def train(model, data, tok, a):
                                  basis=a.basis, targets=a.targets, seed=a.seed, which="last")}, p)
         print(f"    luu {p}  ({os.path.getsize(p) / 2**20:.1f} MB)")
     return dict(final_loss=run, train_s=round(el, 1), train_it_s=round(step / el, 3),
-                steps_run=step, peak_vram_gb=round(vram, 2))
+                steps_run=step, peak_vram_gb=round(vram, 2), mid_eval=mid)
 
 
 # =========================================================================== main
 
 def build_model(a):
     from transformers import AutoModelForCausalLM
-    m = AutoModelForCausalLM.from_pretrained(a.model, dtype=torch.float32)
+    dtype = torch.bfloat16 if getattr(a, "bf16", False) else torch.float32
+    m = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=dtype)
     n0 = sum(p.numel() for p in m.parameters())
     if a.method == "rowspace":
         print(f"  phan ra {a.targets} (basis={a.basis})...", flush=True)
-        convert_rowspace(m, a.targets, a.basis, a.rank, a.alpha, a.dtype, verbose=True)
+        convert_rowspace(m, a.targets, a.basis, a.rank, a.alpha, a.dtype, verbose=True,
+                         cache=getattr(a, "fac_cache", None))
+    elif a.method == "hybrid":
+        rs = getattr(a, "rank_square", None) or a.rank
+        als = getattr(a, "alpha_square", None) or rs
+        print(f"  hybrid: S-LoRA r={a.rank} (non-square) + LoRA r={rs} (square)...",
+              flush=True)
+        apply_hybrid(m, a.targets, a.rank, rs, a.alpha, als,
+                     a.basis, a.dtype, verbose=True,
+                     cache=getattr(a, "fac_cache", None),
+                     norm=getattr(a, "slora_norm", None))
     elif a.method == "lora":
         apply_lora(m, a.targets, a.rank, a.alpha)
     elif a.method == "none":
         for p in m.parameters():
             p.requires_grad_(False)
+    if getattr(a, "grad_ckpt", False):
+        # Non-reentrant: backbone dong bang nen input cua block khong co grad;
+        # ban reentrant se lang le bo gradient cua adapter ben trong block.
+        # KHONG tat config.use_cache: generate() luc cham can KV cache, va HF tu
+        # bo qua cache trong luc train khi checkpointing dang bat.
+        m.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False})
     return m.to(a.device), param_counts(m, n0)
 
 
 def main():
     p = argparse.ArgumentParser(description="Commonsense reasoning: rowspace vs lora")
     p.add_argument("--model", default="unsloth/Llama-3.2-1B")
-    p.add_argument("--method", required=True, choices=["rowspace", "lora", "none"])
+    p.add_argument("--method", required=True,
+                   choices=["rowspace", "lora", "hybrid", "none"])
     p.add_argument("--rank", type=int, default=4)
+    p.add_argument("--rank-square", type=int, default=None,
+                   help="LoRA rank cho ma tran vuong khi --method hybrid (mac dinh = rank)")
     p.add_argument("--alpha", type=float, default=None)
+    p.add_argument("--alpha-square", type=float, default=None)
     p.add_argument("--basis", choices=["colperm", "svd"], default="colperm")
+    p.add_argument("--slora-norm", choices=["rms"], default=None,
+                   help="rms: chia scale cua S-LoRA cho ‖P‖_F/√k de bu do khuech dai cua X̄")
     p.add_argument("--target-set", default="qwen2_kv", choices=sorted(TARGETS))
     p.add_argument("--epochs", type=int, default=3)
     p.add_argument("--batch", type=int, default=8)
+    p.add_argument("--grad-accum", type=int, default=1,
+                   help="gradient accumulation steps (effective batch = batch * grad-accum)")
     p.add_argument("--lr", type=float, default=2e-4)
+    p.add_argument("--bf16", action="store_true",
+                   help="nap model bf16 (tiet kiem ~50%% VRAM)")
+    p.add_argument("--fac-cache", default=None,
+                   help="thu muc cache pivot cho pivoted QR (tiet kiem ~80 phut o 8B)")
     p.add_argument("--weight-decay", type=float, default=0.01)
     p.add_argument("--warmup", type=int, default=500)
     p.add_argument("--label-smoothing", type=float, default=0.0)
@@ -296,6 +353,14 @@ def main():
     p.add_argument("--limit-eval", type=int, default=None)
     p.add_argument("--eval-batch", type=int, default=16)
     p.add_argument("--max-new-tokens", type=int, default=32)
+    p.add_argument("--eval-beams", type=int, default=1,
+                   help="so beam khi cham. LLM-Adapters/DoRA dung 4")
+    p.add_argument("--eval-every", type=int, default=0,
+                   help="cham giua chung moi N optimizer step (0 = tat)")
+    p.add_argument("--eval-limit-mid", type=int, default=200,
+                   help="so cau moi tac vu khi cham giua chung")
+    p.add_argument("--grad-ckpt", action="store_true",
+                   help="gradient checkpointing — can cho 14B tren card 80 GB")
     p.add_argument("--bench-batch", type=int, default=8)
     p.add_argument("--bench-seq", type=int, default=128)
     p.add_argument("--bench-iters", type=int, default=20)
@@ -321,7 +386,16 @@ def main():
     torch.manual_seed(a.seed)
     torch.cuda.manual_seed_all(a.seed)
 
-    tag = f"cs_{a.method}_r{a.rank}_{a.basis if a.method == 'rowspace' else 'na'}_s{a.seed}"
+    if a.method == "hybrid":
+        rs = a.rank_square or a.rank
+        tag = f"cs_hybrid_r{a.rank}q{rs}_{a.basis}{'_' + a.slora_norm if a.slora_norm else ''}_s{a.seed}"
+    elif a.method == "rowspace":
+        tag = f"cs_rowspace_r{a.rank}_{a.basis}_s{a.seed}"
+    else:
+        tag = f"cs_{a.method}_r{a.rank}_na_s{a.seed}"
+    # lr nam trong ten: cung method + rank o hai lr khac nhau se ghi de len
+    # nhau neu khong (da xay ra o quet lr Gemma tren DART).
+    tag += f"_lr{a.lr:g}"
     a.tag = tag
     print(f"\n=== {tag} ===\nmodel={a.model}  device={a.device}  targets={a.targets}")
 
@@ -331,12 +405,15 @@ def main():
         tok.pad_token = tok.eos_token
 
     print("  nap du lieu...")
+    a.grad_accum = a.grad_accum      # wire to train()
     if a.load_ckpt:
         data = []                       # chi eval, khong can du lieu train
     else:
-        ds = load_train(a.max_train, a.seed)
+        n_train = a.max_train if a.max_train > 0 else None
+        ds = load_train(n_train, a.seed)
         data = encode_train(ds, tok, a.max_len)
     tests = load_tests(a.test_cache)
+    a.tests = tests                     # train() can de cham giua chung
     print(f"  train {len(data)} vi du | eval_max_len {a.eval_max_len} | test " +
           ", ".join(f"{SHORT[t]} {len(v)}" for t, v in tests.items()))
 
@@ -347,7 +424,8 @@ def main():
     print(f"\n  TRAIN DUOC: {info['trainable'] / 1e6:.3f} M "
           f"({100 * info['trainable'] / tot:.3f} % cua {tot / 1e6:.2f} M)   [setup {setup_s}s]")
 
-    res = dict(tag=tag, config=vars(a) | {"device": str(a.device), "dtype": str(a.dtype)},
+    cfg = {k: v for k, v in vars(a).items() if k != "tests"}
+    res = dict(tag=tag, config=cfg | {"device": str(a.device), "dtype": str(a.dtype)},
                params=info, setup_s=setup_s)
     if a.load_ckpt:
         # Phan ra tat dinh nen dung lai duoc tu W0; chi can nap phan train duoc.
@@ -368,7 +446,7 @@ def main():
 
     if not a.no_bench:
         res["bench"] = bench_model(model, a)
-        if a.method in ("rowspace", "lora"):
+        if a.method in ("rowspace", "lora", "hybrid"):
             merge_all(model, a.targets)
             res["bench"].update(bench_model(model, a, prefix="merged_"))
         b = res["bench"]
@@ -381,7 +459,10 @@ def main():
     with open(f"{a.out_dir}/summary.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(
             tag=tag, method=a.method, rank=a.rank, alpha=a.alpha,
-            basis=a.basis if a.method == "rowspace" else "na", seed=a.seed,
+            rank_square=a.rank_square, alpha_square=a.alpha_square,
+            lr=a.lr, batch=a.batch, grad_accum=a.grad_accum,
+            eval_beams=a.eval_beams, bf16=a.bf16, slora_norm=a.slora_norm,
+            basis=a.basis if a.method in ("rowspace", "hybrid") else "na", seed=a.seed,
             trainable=info["trainable"], model=a.model, targets=",".join(a.targets),
             max_train=a.max_train, epochs=a.epochs, setup_s=setup_s,
             **{SHORT[t]: round(res["acc"][t], 2) for t in TASKS},

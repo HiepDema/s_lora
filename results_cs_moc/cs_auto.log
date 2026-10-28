@@ -1,0 +1,47 @@
+### bat dau 2026-10-27 15:21:41
+### [1] dung venv sach
+WARNING: huggingface-hub 2.3.0 does not provide the extra 'cli'
+  torch 2.6.0+cu124 cuda=True | transformers 5.20.2 | numpy 2.2.6 | scipy 1.15.3
+  ABI OK
+### [2] tai model 15:22:56
+    xong 15:23:57: unsloth/llama-3-8b, mistralai/Mistral-7B-Instruct-v0.3
+### [3] smoke test 15:23:57
+
+  train: 180 vi du, 6 optimizer steps, lr=0.0001, batch=16x2=32
+
+  danh gia 8 tac vu (epoch cuoi):
+      BoolQ         0.00%  (8 cau, 1s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      PIQA          0.00%  (8 cau, 3s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      SIQA          0.00%  (8 cau, 4s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      HellaSwag     0.00%  (8 cau, 5s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      WinoGrande    0.00%  (8 cau, 6s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      ARC-e         0.00%  (8 cau, 8s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      ARC-c         0.00%  (8 cau, 9s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      OBQA          0.00%  (8 cau, 10s)
+
+    TRUNG BINH: 0.00%
+
+  do tre: fwd 52.43 ms | fwd+bwd 127.41 ms | sau merge 34.17 ms
+
+  ket qua -> smoke/cs_hybrid_r73q32_colperm_s0_lr0.0001.json
+### smoke OK 15:38:57
+### [run] llama3  bat dau 2026-10-27 15:38:57
+### [run] llama3 ket thuc rc=0  2026-10-27 17:34:13
+      BoolQ        62.17%  (3270 cau, 75s)
+      PIQA         49.62%  (1838 cau, 178s)
+      SIQA         33.83%  (1954 cau, 245s)
+      HellaSwag    24.54%  (10042 cau, 961s)
+      WinoGrande   49.88%  (1267 cau, 1000s)
+      ARC-e        23.82%  (2376 cau, 1100s)
+      ARC-c        25.17%  (1172 cau, 1153s)
+      OBQA         20.40%  (500 cau, 1170s)
+    TRUNG BINH: 36.18%
+### [run] mistral  bat dau 2026-10-27 17:34:13
+### dung tay mistral Tue Oct 27 18:24:58 UTC 2026

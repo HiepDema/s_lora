@@ -1,0 +1,45 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Repo card metadata block was not found. Setting CardData to empty.
+
+=== cs_hybrid_r73q32_colperm_s0_lr0.0001 ===
+model=unsloth/llama-3-8b  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'mlp.up_proj', 'mlp.down_proj']
+  nap du lieu...
+Generating train split:   0%|          | 0/170420 [00:00<?, ? examples/s]Generating train split:  50%|████▉     | 85000/170420 [00:00<00:00, 843682.69 examples/s]Generating train split: 100%|██████████| 170420/170420 [00:00<00:00, 1116353.43 examples/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  train 180 vi du | eval_max_len 640 | test BoolQ 3270, PIQA 1838, SIQA 1954, HellaSwag 10042, WinoGrande 1267, ARC-e 2376, ARC-c 1172, OBQA 500
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 11252.87it/s]
+  hybrid: S-LoRA r=73 (non-square) + LoRA r=32 (square)...
+    8/32 blocks  (218s)
+    16/32 blocks  (426s)
+    24/32 blocks  (637s)
+    32/32 blocks  (843s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+    hybrid: 128 S-LoRA (r=73), 32 square LoRA (r=32)
+
+  TRAIN DUOC: 56.230 M (0.695 % cua 8086.49 M)   [setup 845.8s]
+
+  train: 180 vi du, 6 optimizer steps, lr=0.0001, batch=16x2=32
+
+  danh gia 8 tac vu (epoch cuoi):
+      BoolQ         0.00%  (8 cau, 1s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      PIQA          0.00%  (8 cau, 3s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      SIQA          0.00%  (8 cau, 4s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      HellaSwag     0.00%  (8 cau, 5s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      WinoGrande    0.00%  (8 cau, 6s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      ARC-e         0.00%  (8 cau, 8s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      ARC-c         0.00%  (8 cau, 9s)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=8192) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      OBQA          0.00%  (8 cau, 10s)
+
+    TRUNG BINH: 0.00%
+
+  do tre: fwd 52.43 ms | fwd+bwd 127.41 ms | sau merge 34.17 ms
+
+  ket qua -> smoke/cs_hybrid_r73q32_colperm_s0_lr0.0001.json

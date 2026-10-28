@@ -1,31 +1,16 @@
 #!/usr/bin/env python
-"""
-Row-space PEFT cho GPT-2: tinh X cho moi ma tran trong so KHONG VUONG, dong bang X,
-chi fine-tune ma tran vuong k x k voi k = min(d_in, d_out).
+"""Row-space PEFT — GPT-2 verification CLI and backward-compatibility shim.
 
-Phan ra CHINH XAC (khong xap xi). Voi W (n x m) = weight.T cua Conv1D:
+Core code has moved to the ``slora`` package:
+    slora/factorize.py  — pivoted-QR / SVD factorization
+    slora/adapters.py   — RowSpaceLinear, LoRA, VeRA modules
+    slora/surgery.py    — inject / merge / count
 
-  W beo ngang (m > n) -- vd mlp.c_proj 1024x4096,  k = n
-        W[:, piv] = W2 [I | X]      X = W2^-1 W1        [n, m-n]
-        y = W2 (x[sel] + X x[rest])                     rang buoc: rowspace(dW) c rowspace(W0)
+This file re-exports everything the old ``from rowspace_peft import …``
+statements need, and keeps the GPT-2-specific CLI (--verify, --train-demo,
+--save) that is not part of the generic package.
 
-  W cao doc (m < n) -- vd c_attn 3072x1024, mlp.c_fc 4096x1024,  k = m
-        W[piv, :] = [I ; X] W2      X = W1 W2^-1        [n-m, m]
-        h = W2 x;  y[sel] = h,  y[rest] = X h           rang buoc: colspace(dW) c colspace(W0)
-
-Chi luu X (khong luu khoi identity) -> tong trong so = n*m, BANG DUNG model goc.
-Cac hang/cot lam W2 duoc chon bang column-pivoted QR chu khong phai lay k cai dau tien:
-lay k dau tien lam sai so forward tang ~37x so voi matmul goc, pivoted QR chi ~5.9x.
-
-  --basis colperm   dang [I | X] nhu tren (mac dinh). Bao toan tham so.
-  --basis svd       P truc chuan tu SVD. CUNG khong gian nghiem va cung so tham so
-                    train duoc, sai so forward chi 1.29x thay vi 5.9x, nhung phai luu
-                    P day du -> ton them k^2 moi lop. Nen dung neu train bf16.
-
-  --rank 0          train thang ma tran vuong (mac dinh, dung y tuong goc)
-  --rank r          LoRA len ma tran vuong, 2*k*r tham so/lop
-
-Chay:
+Usage:
   python rowspace_peft.py --verify --model gpt2
   python rowspace_peft.py --verify --basis svd
   python rowspace_peft.py --train-demo --steps 20
@@ -34,291 +19,30 @@ Chay:
 from __future__ import annotations
 
 import argparse
-import math
 import statistics as st
-import os
 import sys
 import time
 
 import torch
 import torch.nn as nn
 
-# Conv1D.weight co shape [d_in, d_out];  W (out x in) = weight.T
-#   attn.c_attn  1024 -> 3072   cao doc    k = 1024
-#   attn.c_proj  1024 -> 1024   VUONG   -> loai (phan ra khong cho rang buoc nao)
-#   mlp.c_fc     1024 -> 4096   cao doc    k = 1024
-#   mlp.c_proj   4096 -> 1024   beo ngang  k = 1024
+# ===== Re-exports from slora (backward compat) =============================
+from slora.factorize import (                          # noqa: F401
+    factorize as factorize_conv1d,
+    factorize_cached,
+    pivoted_qr as _pivoted_qr,
+    reconstruct_P as _dense_P,
+    rebuild_from_pivots as _rebuild,
+)
+from slora.adapters import RowSpaceLinear               # noqa: F401
+
+# ===== GPT-2 specific constants ============================================
 NONSQUARE = ["attn.c_attn", "mlp.c_fc", "mlp.c_proj"]
-SQUARE = ["attn.c_proj"]
-MODEL = "gpt2-medium"
+SQUARE    = ["attn.c_proj"]
+MODEL     = "gpt2-medium"
 
 
-# =========================================================================== phan ra
-
-def _pivoted_qr(A):
-    """(R, piv) sao cho A[:, piv] = Q R. Uu tien LAPACK geqp3."""
-    import numpy as np
-    try:
-        from scipy.linalg import qr
-        _, R, piv = qr(A, mode="economic", pivoting=True)
-        return np.ascontiguousarray(R), np.ascontiguousarray(piv)
-    except ImportError:
-        pass
-    try:
-        from split_solve import qr_pivot_numpy
-    except ImportError:
-        sys.exit("Can `pip install scipy` hoac de split_solve.py cung thu muc.")
-    return qr_pivot_numpy(np.asarray(A))
-
-
-def _wide(W, basis):
-    """W (n x m) voi m > n.  W = W2 @ P.
-
-    basis svd     -> dict(kind='dense', W2 [n,n], P [n,m])
-    basis colperm -> dict(kind='struct', W2 [n,n], X [n,m-n], sel [n], rest [m-n])
-    """
-    n, m = W.shape
-    if basis == "svd":
-        U, S, Vh = torch.linalg.svd(W, full_matrices=False)
-        return dict(kind="dense", W2=U * S, P=Vh, maxP=Vh.abs().max().item())
-
-    # W[:, piv] = Q [R11 | R12] ;  W2 = W[:, piv[:n]] = Q R11 ;  X = W2^-1 W1 = R11^-1 R12
-    # Q triet tieu, chi con MOT triangular solve -> backward stable.
-    R, piv = _pivoted_qr(W.cpu().numpy())
-    R = torch.as_tensor(R, dtype=W.dtype, device=W.device)
-    piv = torch.as_tensor(piv, dtype=torch.long, device=W.device)
-    R11 = R[:, :n]
-    X = torch.linalg.solve_triangular(R11, R[:, n:], upper=True)
-    d = R11.diagonal().abs()
-    return dict(kind="struct", W2=W[:, piv[:n]].contiguous(), X=X.contiguous(),
-                sel=piv[:n].contiguous(), rest=piv[n:].contiguous(),
-                maxX=X.abs().max().item(),
-                condW2=(d.max() / d.clamp_min(torch.finfo(W.dtype).tiny).min()).item())
-
-
-def _tall(W, basis):
-    """W (n x m) voi m < n.  W = P @ W2.
-
-    basis svd     -> dict(kind='dense', W2 [m,m], P [n,m])
-    basis colperm -> dict(kind='struct', W2 [m,m], X [n-m,m], sel [m], rest [n-m])
-    """
-    if basis == "svd":
-        U, S, Vh = torch.linalg.svd(W, full_matrices=False)
-        return dict(kind="dense", W2=S[:, None] * Vh, P=U, maxP=U.abs().max().item())
-
-    # Doi ngau: A = W^T la "beo ngang".  A[:, piv] = W2a [I | Xa]
-    #   A[:, sel]  = W2a          -> W[sel, :]  = W2a^T =: W2
-    #   A[:, rest] = W2a @ Xa     -> W[rest, :] = Xa^T @ W2  =: X @ W2
-    f = _wide(W.T.contiguous(), basis)
-    f["W2"] = f["W2"].T.contiguous()
-    f["X"] = f["X"].T.contiguous()
-    return f
-
-
-def factorize_conv1d(weight, basis, dtype=torch.float64):
-    """weight: [d_in, d_out] cua Conv1D. Tra ve (fac, orientation, info).
-
-    orientation 'pre'  (W beo ngang, k = d_out): y = square(x[sel] + x[rest] @ X^T)
-    orientation 'post' (W cao doc,   k = d_in) : h = square(x); y[sel]=h, y[rest]=h @ X^T
-    """
-    d_in, d_out = weight.shape
-    if d_in == d_out:
-        raise ValueError("ma tran vuong: phan ra khong tao ra rang buoc nao")
-    W = weight.T.to(dtype)                        # [n, m] = [d_out, d_in],  y = W x
-    n, m = W.shape
-
-    if m > n:
-        f, orient = _wide(W, basis), "pre"
-        recon = f["W2"] @ _dense_P(f, n, m, W)
-    else:
-        f, orient = _tall(W, basis), "post"
-        recon = _dense_P(f, n, m, W) @ f["W2"]
-
-    info = {k: v for k, v in f.items() if isinstance(v, float)}
-    info["res"] = (torch.linalg.norm(recon - W) / torch.linalg.norm(W)).item()
-    return f, orient, info
-
-
-def _rebuild(W, sel, rest, orient):
-    """Dung lai (W2, X) tu pivot bang mot phep GIAI HE, khong chay lai QR.
-
-    beo ngang: W[:,sel] = W2,  W[:,rest] = W2 @ X   -> X = W2^-1 W[:,rest]
-    cao doc  : W[sel,:] = W2,  W[rest,:] = X @ W2   -> X = W[rest,:] W2^-1
-    """
-    if orient == "pre":
-        W2 = W[:, sel].contiguous()
-        X = torch.linalg.solve(W2, W[:, rest])
-    else:
-        W2 = W[sel, :].contiguous()
-        X = torch.linalg.solve(W2.T, W[rest, :].T).T
-    return W2, X.contiguous()
-
-
-def factorize_cached(weight, basis, dtype, cache_path):
-    """factorize_conv1d nhung luu/doc lai PIVOT.
-
-    Pivoted QR chiem gan het thoi gian — do tren Mistral-7B ca 7 lop la 111 phut
-    moi run, nhieu hon ca thoi gian train. Pivot la phan tat dinh duy nhat can
-    giu; X va W2 dung lai tu do bang mot phep giai he k x k, tren GPU gan nhu
-    tuc thi. Luu thang X se ton ~32 GB, luu pivot chi ton ~25 MB.
-
-    cache_path = None -> hanh vi cu, khong cache.
-    """
-    if not cache_path or basis != "colperm":
-        return factorize_conv1d(weight, basis, dtype)
-
-    d_in, d_out = weight.shape
-    if d_in == d_out:
-        raise ValueError("ma tran vuong: phan ra khong tao ra rang buoc nao")
-    W = weight.T.to(dtype)
-    n, m = W.shape
-    orient = "pre" if m > n else "post"
-
-    if os.path.exists(cache_path):
-        z = torch.load(cache_path, map_location="cpu", weights_only=True)
-        sel = z["sel"].to(W.device)
-        rest = z["rest"].to(W.device)
-        W2, X = _rebuild(W, sel, rest, orient)
-        f = dict(kind="struct", W2=W2, X=X, sel=sel, rest=rest,
-                 maxX=X.abs().max().item(), condW2=float("nan"))
-        return f, orient, dict(res=float("nan"), cached=1.0)
-
-    f, orient, info = factorize_conv1d(weight, basis, dtype)
-    os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
-    tmp = cache_path + ".tmp"
-    torch.save({"sel": f["sel"].cpu(), "rest": f["rest"].cpu()}, tmp)
-    os.replace(tmp, cache_path)         # doi ten de ngat giua chung khong hong cache
-    info["cached"] = 0.0
-    return f, orient, info
-
-
-def _dense_P(f, n, m, ref):
-    """Dung lai P day du tu dang co cau truc. Chi dung de kiem tra / merge."""
-    if f["kind"] == "dense":
-        return f["P"]
-    P = torch.zeros(n, m, dtype=ref.dtype, device=ref.device)
-    k = f["W2"].shape[0]
-    if f["X"].shape[0] == k:                       # beo ngang: P = [I | X] theo cot
-        P[:, f["sel"]] = torch.eye(k, dtype=ref.dtype, device=ref.device)
-        P[:, f["rest"]] = f["X"]
-    else:                                          # cao doc: P = [I ; X] theo hang
-        P[f["sel"], :] = torch.eye(k, dtype=ref.dtype, device=ref.device)
-        P[f["rest"], :] = f["X"]
-    return P
-
-
-# =========================================================================== module
-
-class RowSpaceLinear(nn.Module):
-    """Thay Conv1D bang (phan co dinh) x (ma tran vuong train duoc).
-
-    rank == 0 : train thang C  (dung y tuong goc)
-    rank  > 0 : dong bang C, train LoRA len no
-    """
-
-    def __init__(self, fac, orientation, bias, out_dtype, rank=0, alpha=None):
-        super().__init__()
-        self.orientation, self.rank = orientation, rank
-        self.structured = fac["kind"] == "struct"
-        C = fac["W2"].T.contiguous().to(out_dtype)          # dang hang-vector
-        k = C.shape[0]
-        self.k = k
-
-        if self.structured:
-            self.register_buffer("X", fac["X"].to(out_dtype))
-            self.register_buffer("sel", fac["sel"])
-            self.register_buffer("rest", fac["rest"])
-            if orientation == "post":
-                perm = torch.cat([fac["sel"], fac["rest"]])
-                self.register_buffer("inv", torch.argsort(perm))
-                self.nf = perm.numel()
-            else:
-                self.nf = k
-        else:
-            self.register_buffer("P", fac["P"].T.contiguous().to(out_dtype))
-            self.nf = self.P.shape[1] if orientation == "post" else k
-
-        self.bias = nn.Parameter(bias.clone()) if bias is not None else None
-
-        if rank == 0:
-            self.C = nn.Parameter(C)                        # <- thu duy nhat duoc train
-            self.scale = 1.0
-        else:
-            self.register_buffer("C", C)
-            # PHAI truyen device: neu khong, tham so moi nam tren CPU khi model da o GPU
-            self.lora_down = nn.Parameter(torch.empty(k, rank, dtype=C.dtype, device=C.device))
-            self.lora_up = nn.Parameter(torch.zeros(rank, k, dtype=C.dtype, device=C.device))
-            nn.init.kaiming_uniform_(self.lora_down, a=math.sqrt(5))
-            self.scale = (alpha if alpha is not None else rank) / rank
-
-    @classmethod
-    def from_conv1d(cls, conv, basis="colperm", rank=0, alpha=None, dtype=torch.float64):
-        fac, orient, info = factorize_conv1d(conv.weight.data, basis, dtype)
-        b = conv.bias.data if conv.bias is not None else None
-        return cls(fac, orient, b, conv.weight.dtype, rank, alpha), info
-
-    # ---- ba manh ghep cua forward
-
-    def _square(self, h):
-        out = h @ self.C
-        if self.rank > 0:
-            out = out + self.scale * ((h @ self.lora_down) @ self.lora_up)
-        return out
-
-    def _in_proj(self, x):                                  # d_in -> k  (chi dung khi 'pre')
-        if self.structured:
-            # h = x[sel] + X x[rest];  khoi identity la phep chon chi so, khong phai matmul
-            return x.index_select(-1, self.sel) + x.index_select(-1, self.rest) @ self.X.T
-        return x @ self.P
-
-    def _out_proj(self, h):                                 # k -> d_out (chi dung khi 'post')
-        if self.structured:
-            return torch.cat([h, h @ self.X.T], dim=-1).index_select(-1, self.inv)
-        return h @ self.P
-
-    def forward(self, x):
-        out = self._square(self._in_proj(x)) if self.orientation == "pre" \
-            else self._out_proj(self._square(x))
-        return out + self.bias if self.bias is not None else out
-
-    # ---- tien ich
-
-    def effective_C(self):
-        C = self.C.double()
-        if self.rank > 0:
-            C = C + self.scale * (self.lora_down.double() @ self.lora_up.double())
-        return C
-
-    @torch.no_grad()
-    def merged_weight(self):
-        """Gop ve weight [d_in, d_out] cua Conv1D -> inference zero-overhead."""
-        C = self.effective_C()
-        if not self.structured:
-            P = self.P.double()
-            return (P @ C if self.orientation == "pre" else C @ P).to(self.C.dtype)
-        X = self.X.double()
-        if self.orientation == "pre":                       # weight[sel]=C, weight[rest]=X^T C
-            W = torch.zeros(self.sel.numel() + self.rest.numel(), C.shape[1],
-                            dtype=torch.float64, device=C.device)
-            W[self.sel], W[self.rest] = C, X.T @ C
-        else:                                               # weight[:,sel]=C, weight[:,rest]=C X^T
-            W = torch.zeros(C.shape[0], self.sel.numel() + self.rest.numel(),
-                            dtype=torch.float64, device=C.device)
-            W[:, self.sel], W[:, self.rest] = C, C @ X.T
-        return W.to(self.C.dtype)
-
-    def frozen_numel(self):
-        n = self.X.numel() if self.structured else self.P.numel()
-        if self.rank > 0:
-            n += self.C.numel()      # khi train LoRA thi C cung la buffer dong bang
-        return n
-
-    def extra_repr(self):
-        return (f"k={self.k}, orientation={self.orientation}, "
-                f"{'structured [I|X]' if self.structured else 'dense P'}, rank={self.rank}")
-
-
-# =========================================================================== surgery
+# ===== GPT-2 surgery (Conv1D layout) =======================================
 
 def _resolve(root, path):
     parts = path.split(".")
@@ -330,7 +54,7 @@ def _resolve(root, path):
 
 def convert_gpt2(model, targets=NONSQUARE, basis="colperm", rank=0, alpha=None,
                  dtype=torch.float64, verbose=True):
-    """Thay tai cho cac Conv1D khong vuong; dong bang tat ca tru ma tran vuong."""
+    """Replace non-square Conv1D layers in GPT-2 with RowSpaceLinear."""
     report, t0 = [], time.perf_counter()
     blocks = model.transformer.h
     for i, block in enumerate(blocks):
@@ -359,6 +83,7 @@ def convert_gpt2(model, targets=NONSQUARE, basis="colperm", rank=0, alpha=None,
 
 @torch.no_grad()
 def merge_back(model, targets=NONSQUARE):
+    """Merge RowSpaceLinear back to Conv1D (GPT-2 specific)."""
     from transformers.pytorch_utils import Conv1D
     for block in model.transformer.h:
         for name in targets:
@@ -377,7 +102,7 @@ def merge_back(model, targets=NONSQUARE):
     return model
 
 
-# =========================================================================== bao cao
+# ===== Reporting ============================================================
 
 def factorization_report(report):
     nblk = len({r["layer"].split(".")[1] for r in report})
@@ -400,7 +125,6 @@ def factorization_report(report):
 
 
 def param_table(model, rank, targets, n_orig=None):
-    # P/X la buffer, khong nam trong .parameters() -> phai cong tay
     tr = sum(p.numel() for p in model.parameters() if p.requires_grad)
     frozen = sum(m.frozen_numel() for m in model.modules() if isinstance(m, RowSpaceLinear))
     tot = sum(p.numel() for p in model.parameters()) + frozen
@@ -424,19 +148,18 @@ def param_table(model, rank, targets, n_orig=None):
               f"-> method nay re hon {lora / tr:.2f}x")
 
 
-# =========================================================================== lenh
+# ===== CLI ==================================================================
 
 @torch.no_grad()
 def cmd_verify(a):
     import gc
-
     from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+
     print(f"\n=== VERIFY  basis={a.basis}  rank={a.rank}  dtype={a.dtype} ===")
     tok = GPT2TokenizerFast.from_pretrained(a.model)
     text = "The Eagle is a cheap French coffee shop by the riverside. " * 12
     ids = tok(text, return_tensors="pt").input_ids[:, :a.seq_len].to(a.device)
 
-    # Pha 1: lay tham chieu roi GIAI PHONG -- giu hai model cung luc se OOM tren may it RAM
     ref = GPT2LMHeadModel.from_pretrained(a.model).to(a.device).eval()
     n_orig = sum(p.numel() for p in ref.parameters())
     lr = ref(ids).logits.float().clone()
@@ -444,7 +167,6 @@ def cmd_verify(a):
     del ref
     gc.collect()
 
-    # Pha 2: nap lai, phan ra, do lech
     new = GPT2LMHeadModel.from_pretrained(a.model).to(a.device).eval()
     print("  dang phan ra...")
     rep = convert_gpt2(new, a.targets, a.basis, a.rank, a.alpha, a.dtype)
@@ -471,6 +193,7 @@ def cmd_verify(a):
 
 def cmd_train_demo(a):
     from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+
     print(f"\n=== TRAIN DEMO  basis={a.basis}  rank={a.rank} ===")
     tok = GPT2TokenizerFast.from_pretrained(a.model)
     model = GPT2LMHeadModel.from_pretrained(a.model).to(a.device)
@@ -502,6 +225,7 @@ def cmd_train_demo(a):
 
 def cmd_save(a):
     from transformers import GPT2LMHeadModel
+
     model = GPT2LMHeadModel.from_pretrained(a.model)
     n_orig = sum(p.numel() for p in model.parameters())
     rep = convert_gpt2(model, a.targets, a.basis, a.rank, a.alpha, a.dtype)

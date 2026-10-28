@@ -1,0 +1,44 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Repo card metadata block was not found. Setting CardData to empty.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+=== cs_hybrid_r73q32_colperm_s0_lr0.0001 ===
+model=mistralai/Mistral-7B-Instruct-v0.3  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'mlp.up_proj', 'mlp.down_proj']
+  nap du lieu...
+  train 144853 vi du | eval_max_len 640 | test BoolQ 3270, PIQA 1838, SIQA 1954, HellaSwag 10042, WinoGrande 1267, ARC-e 2376, ARC-c 1172, OBQA 500
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 9050.37it/s]
+  hybrid: S-LoRA r=73 (non-square) + LoRA r=32 (square)...
+    8/32 blocks  (202s)
+    16/32 blocks  (407s)
+    24/32 blocks  (610s)
+    32/32 blocks  (811s)
+    hybrid: 128 S-LoRA (r=73), 32 square LoRA (r=32)
+
+  TRAIN DUOC: 56.230 M (0.770 % cua 7304.25 M)   [setup 814.1s]
+
+  train: 144853 vi du, 13581 optimizer steps, lr=0.0001, batch=16x2=32
+    ep 0 step 200/13581  loss 1.2821  lr 9.93e-05  2.26 it/s  ETA 99m
+    ep 0 step 400/13581  loss 0.3680  lr 9.78e-05  2.30 it/s  ETA 95m
+    ep 0 step 600/13581  loss 0.2004  lr 9.63e-05  2.29 it/s  ETA 95m
+    ep 0 step 800/13581  loss 0.1830  lr 9.48e-05  2.31 it/s  ETA 92m
+    ep 0 step 1000/13581  loss 0.1432  lr 9.33e-05  2.31 it/s  ETA 91m
+    ep 0 step 1200/13581  loss 0.1375  lr 9.18e-05  2.32 it/s  ETA 89m
+    ep 0 step 1400/13581  loss 0.1565  lr 9.04e-05  2.33 it/s  ETA 87m
+    ep 0 step 1600/13581  loss 0.1491  lr 8.89e-05  2.33 it/s  ETA 86m
+    ep 0 step 1800/13581  loss 0.1345  lr 8.74e-05  2.33 it/s  ETA 84m
+    ep 0 step 2000/13581  loss 0.1428  lr 8.59e-05  2.33 it/s  ETA 83m
+    ep 0 step 2200/13581  loss 0.1330  lr 8.44e-05  2.33 it/s  ETA 81m
+    ep 0 step 2400/13581  loss 0.1344  lr 8.29e-05  2.33 it/s  ETA 80m
+    ep 0 step 2600/13581  loss 0.1440  lr 8.15e-05  2.33 it/s  ETA 78m
+    ep 0 step 2800/13581  loss 0.1436  lr 8.00e-05  2.33 it/s  ETA 77m
+    ep 0 step 3000/13581  loss 0.1289  lr 7.85e-05  2.33 it/s  ETA 76m
+    ep 0 step 3200/13581  loss 0.1371  lr 7.70e-05  2.33 it/s  ETA 74m
+    ep 0 step 3400/13581  loss 0.1351  lr 7.55e-05  2.33 it/s  ETA 73m
+    ep 0 step 3600/13581  loss 0.1275  lr 7.40e-05  2.33 it/s  ETA 71m
+    ep 0 step 3800/13581  loss 0.1310  lr 7.26e-05  2.33 it/s  ETA 70m
+    ep 0 step 4000/13581  loss 0.1296  lr 7.11e-05  2.32 it/s  ETA 69m
+    ep 0 step 4200/13581  loss 0.1343  lr 6.96e-05  2.32 it/s  ETA 67m
+    ep 0 step 4400/13581  loss 0.1317  lr 6.81e-05  2.32 it/s  ETA 66m
+    ep 1 step 4600/13581  loss 0.1343  lr 6.66e-05  2.32 it/s  ETA 64m
+    ep 1 step 4800/13581  loss 0.1350  lr 6.51e-05  2.32 it/s  ETA 63m
+    ep 1 step 5000/13581  loss 0.1309  lr 6.37e-05  2.32 it/s  ETA 62m

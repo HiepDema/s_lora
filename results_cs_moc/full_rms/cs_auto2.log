@@ -1,0 +1,29 @@
+### bat dau 2026-10-27 18:53:00
+### [run] llama3_slora  bat dau 2026-10-27 18:53:00
+### [run] llama3_slora ket thuc rc=0  2026-10-27 20:51:27
+    >> step 2000 cham giua chung (200 cau/tac vu, greedy): TB 68.50%
+    >> step 4000 cham giua chung (200 cau/tac vu, greedy): TB 72.06%
+    >> step 6000 cham giua chung (200 cau/tac vu, greedy): TB 73.50%
+    >> step 8000 cham giua chung (200 cau/tac vu, greedy): TB 75.31%
+    >> step 10000 cham giua chung (200 cau/tac vu, greedy): TB 76.12%
+    >> step 12000 cham giua chung (200 cau/tac vu, greedy): TB 75.25%
+    TRUNG BINH: 77.42%
+### [run] llama3_lora  bat dau 2026-10-27 20:51:27
+### [run] llama3_lora ket thuc rc=0  2026-10-27 22:24:11
+    >> step 2000 cham giua chung (200 cau/tac vu, greedy): TB 39.50%
+    >> step 4000 cham giua chung (200 cau/tac vu, greedy): TB 37.62%
+    >> step 6000 cham giua chung (200 cau/tac vu, greedy): TB 37.62%
+    >> step 8000 cham giua chung (200 cau/tac vu, greedy): TB 33.50%
+    >> step 10000 cham giua chung (200 cau/tac vu, greedy): TB 36.44%
+    >> step 12000 cham giua chung (200 cau/tac vu, greedy): TB 37.31%
+    TRUNG BINH: 36.66%
+### [run] mistral_slora  bat dau 2026-10-27 22:24:11
+### [run] mistral_slora ket thuc rc=0  2026-10-28 00:29:06
+    >> step 2000 cham giua chung (200 cau/tac vu, greedy): TB 38.25%
+    >> step 4000 cham giua chung (200 cau/tac vu, greedy): TB 37.12%
+    >> step 6000 cham giua chung (200 cau/tac vu, greedy): TB 31.12%
+    >> step 8000 cham giua chung (200 cau/tac vu, greedy): TB 38.12%
+    >> step 10000 cham giua chung (200 cau/tac vu, greedy): TB 37.75%
+    >> step 12000 cham giua chung (200 cau/tac vu, greedy): TB 37.81%
+    TRUNG BINH: 37.52%
+### TAT CA XONG 2026-10-28 00:29:06

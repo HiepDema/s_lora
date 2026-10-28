@@ -331,3 +331,94 @@ recovers about a third of the gap. See `slora_kernels.py`.
 
 The name collides with *S-LoRA: Serving Thousands of Concurrent LoRA Adapters*
 (Sheng et al., MLSys 2024), which is unrelated work.
+
+## Commonsense reasoning against the MoC table
+
+The 8-task commonsense benchmark under the protocol of the MoC paper (Table 1):
+commonsense_170k, `q,k,v,up,down`, 3 epochs, batch 16 × 2, max length 256,
+weight decay 0.01, warmup 100, beam-4 scoring on the full test sets. S-LoRA uses r=73 on
+`k,v,up,down` and LoRA r=32 on the square `q`, which is 56.2M parameters (0.7% under
+LoRA r=32). Adapters train in pure bf16. One seed. Logs are in `results_cs_moc/`.
+
+| Model | Method | lr | % Params | BoolQ | PIQA | SIQA | HellaS. | WinoG. | ARC-e | ARC-c | OBQA | **Avg** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| LLaMA3-8B | **S-LoRA** (ours) | 1e-4 | 0.70 | 67.5 | 81.2 | 77.0 | 84.4 | 80.4 | 82.0 | 68.7 | 78.2 | **77.4** |
+| LLaMA3-8B | LoRA r=32 (ours) | 3e-4 | 0.70 | 62.2 | 49.1 | 33.2 | 24.4 | 50.4 | 24.6 | 26.8 | 22.6 | 36.7 ✗ |
+| Mistral-7B | **S-LoRA** (ours) | 1e-4 | 0.77 | 62.2 | 50.1 | 34.7 | 25.1 | 49.8 | 24.0 | 25.9 | 28.4 | 37.5 ✗ |
+
+✗ = collapsed: the model learns the answer template and then gives one fixed answer
+per task. Both scores are at chance.
+
+Reference: MoC Table 1 (* = numbers the MoC paper took from earlier publications).
+
+| Model | Method | % Params | BoolQ | PIQA | SIQA | HellaS. | WinoG. | ARC-e | ARC-c | OBQA | **Avg** |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LLaMA3-8B | LoRA* | 0.71 | 70.8 | 85.2 | 79.9 | 91.7 | 84.3 | 84.2 | 71.2 | 79.0 | 80.8 |
+| | DoRA* | 0.71 | 74.6 | 89.3 | 79.9 | 95.5 | 85.6 | 90.5 | 80.4 | 85.8 | 85.2 |
+| | MoLEx | 0.72 | 70.1 | 86.2 | 80.4 | 93.2 | 84.1 | 84.8 | 71.3 | 82.2 | 81.5 |
+| | Control* | 0.42 | 74.1 | 87.8 | 80.7 | 95.5 | 86.0 | 90.8 | 80.0 | 87.8 | 85.3 |
+| | MoC | 0.43 | 75.5 | 89.5 | 82.0 | 96.6 | 88.8 | 91.5 | 81.6 | 88.0 | 86.7 |
+| Mistral-7B v0.3 | LoRA | 0.78 | 68.7 | 83.5 | 77.2 | 90.3 | 82.5 | 85.7 | 73.4 | 80.5 | 80.2 |
+| | DoRA | 0.79 | 70.3 | 84.5 | 77.8 | 89.9 | 83.1 | 87.1 | 72.2 | 82.4 | 80.9 |
+| | MoLEx | 0.80 | 71.4 | 85.4 | 78.2 | 90.3 | 83.5 | 84.1 | 75.0 | 82.7 | 81.3 |
+| | Control | 0.46 | 70.6 | 86.9 | 79.0 | 94.2 | 84.8 | 87.9 | 76.5 | 84.8 | 83.1 |
+| | MoC | 0.48 | 74.2 | 88.9 | 81.0 | 95.6 | 87.9 | 88.9 | 79.5 | 87.8 | 85.5 |
+
+MoC reports its own training time and memory: LoRA\* takes 7.5 h and 59.1 GB on
+LLaMA3-8B, and MoC 6.5 h and 56.7 GB. Its hardware is not ours, so compare these only
+within that table.
+
+Cost on our side, same H100 80GB, LLaMA3-8B, both runs 13,848 steps. Latency is measured
+at batch 8 × 128 tokens.
+
+| | S-LoRA | LoRA r=32 | S-LoRA / LoRA |
+|---|---|---|---|
+| Training throughput (optimizer steps/s) | 2.40 | 3.05 | 0.79× |
+| Training wall time | 96 min | 76 min | 1.27× |
+| Setup: factorization from cached pivots | 67 s | 11 s | — |
+| Peak training memory | 41.5 GB | 43.5 GB | 0.95× |
+| Forward latency, unmerged | 52.1 ms | 40.7 ms | 1.28× |
+| Forward + backward latency, unmerged | 127.0 ms | 98.1 ms | 1.29× |
+| **Forward latency, merged** | **34.2 ms** | **34.5 ms** | **0.99×** |
+| Scoring 22.4K questions, beam 4, unmerged | 19.9 min | 15.9 min | 1.25× |
+
+Mistral S-LoRA runs at 2.23 steps/s and peaks at 37.2 GB. Its latency is 51.4 ms
+unmerged and 33.2 ms merged.
+
+What the timing table shows:
+- **Training costs 27% more than LoRA.** The factored forward pays for the column
+  gather and the `X̄` multiply. This matches the 20% per-step gap noted under Status.
+- **After merging, inference matches LoRA.** Both merge to a plain `W₀ + ΔW`, so
+  latency is the same.
+- **The scoring time is only a rough guide.** The LoRA run had collapsed, so its
+  generated answers may differ in length.
+
+**S-LoRA on LLaMA3-8B scores 77.4, 3.4 below the published LoRA\* (80.8).** That gap is
+not yet attributable to the method. Our own LoRA run collapsed, so this pipeline has no
+working reference. Cross-pipeline gaps of 2.5–4.3 points have appeared before.
+
+**These S-LoRA runs need `--slora-norm rms`; without it every run collapses.** The
+adapter acts on `C`, and the update reaches the weight as `ΔW = ΔC·P`, with
+`P = [I | X̄]`. On LLaMA3-8B, `‖X̄‖₂` is 95–376, against 23–54 on the small models,
+so `P` amplifies the update `‖ΔW‖/‖ΔC‖`:
+
+| | `k_proj` | `v_proj` | `down_proj` | `up_proj` |
+|---|---|---|---|---|
+| Amplification `‖ΔW‖/‖ΔC‖` | 17× | 19× | 27× | 167× (up to 244×) |
+
+On the first, unnormalised run, `up_proj` ended with `‖ΔW‖/‖W₀‖ = 15`, and the
+model scored 36.2. `rms` divides each layer's scale by `‖P‖_F/√k`, which is a per-layer
+α. The factorization itself is exact:
+- The fp64 residual is about 1e-13.
+- The untrained hybrid matches the base model to KL 0.003, with 97% top-1 agreement,
+  on both models.
+
+**The other two collapses look like a learning-rate or precision problem, not a
+factorization problem.**
+- LoRA at 3e-4 collapses in the same way as S-LoRA.
+- Mistral collapses during warmup. Its starting loss is 3.86, against 2.08 for LLaMA3.
+
+The prime suspect is the pure-bf16 adapters, which have no fp32 master copy; DoRA trains
+with fp16 AMP. Next, in order:
+1. fp32 adapters.
+2. Failing that, LoRA at 1e-4 (S-LoRA's lr) and Mistral at 3e-5.
