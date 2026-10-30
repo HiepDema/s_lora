@@ -40,11 +40,13 @@ class RowSpaceLinear(nn.Module):
     post-orientation (tall weights):  h = square(x)  → out_proj(h)
     """
 
-    def __init__(self, fac, orientation, bias, out_dtype, rank=0, alpha=None, norm=None):
+    def __init__(self, fac, orientation, bias, out_dtype, rank=0, alpha=None, norm=None,
+                 impl="factored", weight=None):
         super().__init__()
         self.orientation = orientation
         self.rank = rank
         self.structured = (fac["kind"] == "struct")
+        self.impl = impl
 
         # W₂ᵀ in row-vector layout: forward does  h @ C  instead of  C @ h
         C = fac["W2"].T.contiguous().to(out_dtype)
@@ -88,6 +90,18 @@ class RowSpaceLinear(nn.Module):
                 xf2 = fac["X"].double().pow(2).sum().item()
                 self.scale *= math.sqrt(k / (k + xf2))
 
+        # impl="lowrank": phan dong bang chay qua W0 nguyen ban, chi delta di qua
+        # X̄ (xem _eff_factors). Cung ham, cung gradient voi duong phan ra, nhung
+        # sai so lam tron va chi phi giong LoRA. Tren ViT-B, duong phan ra lech
+        # khoi model goc 1% o TF32 va 9% o bf16 ngay khi chua train (LoRA: 0.1% / 1.5%).
+        if impl == "lowrank":
+            assert rank > 0 and self.structured and weight is not None, \
+                "lowrank can rank > 0, basis colperm va weight goc"
+            self.register_buffer("W0", weight.detach().clone().to(out_dtype))   # [out, in]
+            if orientation == "pre":
+                perm = torch.cat([fac["sel"], fac["rest"]])
+                self.register_buffer("inv", torch.argsort(perm))
+
     # ---- class method kept for backward compat (GPT-2 CLI) ----
 
     @classmethod
@@ -128,8 +142,22 @@ class RowSpaceLinear(nn.Module):
             return torch.cat([h, h @ self.X.T], dim=-1).index_select(-1, self.inv)
         return h @ self.P
 
-    def forward(self, x):
+    def _eff_factors(self):
+        """(A_eff, B_eff) with ΔW = scale · A_eff B_eff in [d_in, d_out] layout.
+
+        wide:  h@A = x[sel]@A + x[rest]@(X̄ᵀA)  ->  A_eff = [A ; X̄ᵀA] permuted, B_eff = B
+        tall:  out_proj(g@B) = g@[B | B X̄ᵀ]    ->  A_eff = A, B_eff = [B | B X̄ᵀ] permuted
+        """
+        A, B = self.lora_down, self.lora_up
         if self.orientation == "pre":
+            return torch.cat([A, self.X.T @ A], dim=0).index_select(0, self.inv), B
+        return A, torch.cat([B, B @ self.X.T], dim=1).index_select(1, self.inv)
+
+    def forward(self, x):
+        if self.impl == "lowrank":
+            A, B = self._eff_factors()
+            out = nn.functional.linear(x, self.W0) + self.scale * ((x @ A) @ B)
+        elif self.orientation == "pre":
             out = self._square(self._in_proj(x))
         else:
             out = self._out_proj(self._square(x))
@@ -173,6 +201,8 @@ class RowSpaceLinear(nn.Module):
         n = self.X.numel() if self.structured else self.P.numel()
         if self.rank > 0:
             n += self.C.numel()
+        if self.impl == "lowrank":
+            n += self.W0.numel()
         return n
 
     def extra_repr(self):
@@ -197,6 +227,39 @@ class LoRALinear(nn.Module):
 
     def forward(self, x):
         return self.base(x) + self.scale * ((x @ self.down) @ self.up)
+
+
+class LoRASplitLinear(nn.Module):
+    """LoRA on a fused projection, one rank-r adapter per equal output chunk.
+
+    timm's ViT computes q, k, v with a single ``Linear(d, 3d)``.  LoRA "on q, k, v"
+    means three independent rank-r adapters on the three d-row slices, not one
+    rank-r adapter on the fused 3d × d matrix.
+    """
+
+    def __init__(self, lin, rank, alpha, n_split):
+        super().__init__()
+        self.base = lin
+        d_in, d_out = lin.in_features, lin.out_features
+        assert d_out % n_split == 0, f"{d_out} khong chia het cho {n_split}"
+        dt, dv = lin.weight.dtype, lin.weight.device
+        self.n, self.r = n_split, rank
+        self.down = nn.Parameter(torch.empty(d_in, n_split * rank, dtype=dt, device=dv))
+        self.up   = nn.Parameter(torch.zeros(n_split, rank, d_out // n_split,
+                                             dtype=dt, device=dv))
+        for i in range(n_split):          # cung init voi LoRALinear tren tung lat
+            nn.init.kaiming_uniform_(self.down[:, i * rank:(i + 1) * rank], a=math.sqrt(5))
+        self.scale = alpha / rank
+
+    def forward(self, x):
+        h = (x @ self.down).unflatten(-1, (self.n, self.r))
+        d = torch.einsum("...nr,nro->...no", h, self.up).flatten(-2)
+        return self.base(x) + self.scale * d
+
+    def delta(self):
+        """ΔW in [d_in, d_out] layout, float64."""
+        D = self.down.double().unflatten(1, (self.n, self.r))
+        return self.scale * torch.einsum("inr,nro->ino", D, self.up.double()).flatten(1)
 
 
 class LoRAConv1D(nn.Module):

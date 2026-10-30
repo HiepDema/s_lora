@@ -1,0 +1,55 @@
+
+=== vtab_lora_r4_lr0.001_s0 ===  1 tac vu, da xong 0
+
+  [dtd] Natural  47 lop  train 1000  test 64
+      ep   1  loss 3.8122  train acc   6.8%  lr 1.00e-03  3s
+    => dtd: test 23.44%  (adapter 0.664M, train 3s, peak 8.1 GB)
+    do tre b64: {'fwd_ms': 57.69, 'fwdbwd_ms': 137.36, 'merged_fwd_ms': 35.46}
+
+  TONG KET vtab_lora_r4_lr0.001_s0
+    Natural       23.44  (1/7 tac vu)
+    TB 19 tac vu  23.44   TB 3 nhom  23.44
+
+=== vtab_lora_r8_lr0.001_s0 ===  1 tac vu, da xong 0
+
+  [dtd] Natural  47 lop  train 1000  test 64
+      ep   1  loss 3.8070  train acc   7.2%  lr 1.00e-03  2s
+    => dtd: test 23.44%  (adapter 1.327M, train 2s, peak 8.2 GB)
+    do tre b64: {'fwd_ms': 57.74, 'fwdbwd_ms': 137.61, 'merged_fwd_ms': 35.28}
+
+  TONG KET vtab_lora_r8_lr0.001_s0
+    Natural       23.44  (1/7 tac vu)
+    TB 19 tac vu  23.44   TB 3 nhom  23.44
+
+=== vtab_hybrid_r4_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+
+  [dtd] Natural  47 lop  train 1000  test 64
+      ep   1  loss 3.8167  train acc   6.4%  lr 1.00e-03  2s
+    => dtd: test 20.31%  (adapter 0.295M, train 2s, peak 8.4 GB)
+    do tre b64: {'fwd_ms': 62.22, 'fwdbwd_ms': 141.6, 'merged_fwd_ms': 35.12}
+
+  TONG KET vtab_hybrid_r4_rms_lr0.001_s0
+    Natural       20.31  (1/7 tac vu)
+    TB 19 tac vu  20.31   TB 3 nhom  20.31
+
+=== vtab_hybrid_r8_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+
+  [dtd] Natural  47 lop  train 1000  test 64
+      ep   1  loss 3.8135  train acc   6.4%  lr 1.00e-03  2s
+    => dtd: test 17.19%  (adapter 0.590M, train 2s, peak 8.4 GB)
+    do tre b64: {'fwd_ms': 62.14, 'fwdbwd_ms': 141.72, 'merged_fwd_ms': 35.09}
+
+  TONG KET vtab_hybrid_r8_rms_lr0.001_s0
+    Natural       17.19  (1/7 tac vu)
+    TB 19 tac vu  17.19   TB 3 nhom  17.19
+
+=== vtab_hybrid_r18_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+
+  [dtd] Natural  47 lop  train 1000  test 64
+      ep   1  loss 3.8089  train acc   7.7%  lr 1.00e-03  3s
+    => dtd: test 20.31%  (adapter 1.327M, train 2s, peak 8.5 GB)
+    do tre b64: {'fwd_ms': 63.43, 'fwdbwd_ms': 145.36, 'merged_fwd_ms': 35.1}
+
+  TONG KET vtab_hybrid_r18_rms_lr0.001_s0
+    Natural       20.31  (1/7 tac vu)
+    TB 19 tac vu  20.31   TB 3 nhom  20.31

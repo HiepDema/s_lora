@@ -29,6 +29,7 @@ from slora.factorize import (
 from slora.adapters import (
     LoRAConv1D,
     LoRALinear,
+    LoRASplitLinear,
     RowSpaceLinear,
     VeRALayer,
     VeRAShared,

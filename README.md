@@ -393,3 +393,92 @@ On the unnormalised run, `up_proj` ended with `‖ΔW‖/‖W₀‖ = 15`, and t
 per-layer α. The factorization itself is exact:
 - The fp64 residual is about 1e-13.
 - The untrained hybrid matches the base model to KL 0.003, with 97% top-1 agreement.
+
+## VTAB-1k on ViT-B/16
+
+The 19 VTAB-1k tasks under the NOAH / FacT protocol. The base model is ViT-B/16 with the
+original ImageNet-21k checkpoint (`ViT-B_16.npz`).
+- Each task trains on its 1000 images (`train800val200`) and is scored on the full test
+  set at the final epoch. There is no best-epoch selection.
+- Training: AdamW, lr 1e-3 shared by all runs, batch 64, 100 epochs, 10 warmup epochs
+  then cosine, weight decay 1e-4, drop path 0.1. Precision is fp32 + TF32.
+- One seed. The classifier head is trained fully in every run.
+- Code: `finetune_vtab.py`. Logs: `results_vtab/`.
+
+Adapters go on all six matrices: q, k, v, o, fc1, fc2.
+- **LoRA** gives q, k and v three separate adapters (`LoRASplitLinear`).
+- **S-LoRA** factors the fused `qkv` (2304×768), `fc1` and `fc2`, and puts LoRA on the
+  square `o`. It uses `--slora-norm rms`, since `‖P‖_F/√k` is 7.4 (qkv), 8.9 (fc1) and
+  8.6 (fc2).
+
+| Method | rank | Params | Natural | Specialized | Structured | **Mean of groups** | Avg of 19 |
+|---|---|---|---|---|---|---|---|
+| LoRA | 4 | 0.66M (0.77%) | 78.71 | 84.30 | 56.93 | **73.31** | 70.72 |
+| LoRA | 8 | 1.33M (1.55%) | 78.46 | 84.41 | 56.77 | **73.21** | 70.58 |
+| S-LoRA | 4 | 0.29M (0.34%) | 78.25 | 82.61 | 55.67 | **72.18** | 69.66 |
+| S-LoRA | 8 | 0.59M (0.69%) | 78.58 | 83.56 | 56.36 | **72.83** | 70.27 |
+| S-LoRA | 18 | 1.33M (1.55%) | 78.48 | 83.81 | 56.72 | **73.00** | 70.44 |
+
+**At matched budget, S-LoRA ties LoRA.** S-LoRA r=18 scores 73.00 against 73.21 for
+LoRA r=8 (−0.21), winning 9 tasks and losing 10. That is within what one seed can resolve.
+
+**Rank matters in opposite ways for the two methods.**
+- S-LoRA improves with rank: 72.18 → 72.83 → 73.00.
+- LoRA is already saturated at r=4. Its best run is r=4 (73.31), which beats S-LoRA r=8
+  at a near-equal budget (0.66M against 0.59M) by 0.48.
+
+**The gap sits in Specialized and Structured.** S-LoRA matches LoRA on Natural. At
+matched budget it loses 2.7 on KITTI and dSprites-loc and 1.4 on Retinopathy, and gains
+3.0 on CLEVR-count and 1.5 on smallNORB-azimuth.
+
+Per task, test accuracy at the final epoch. The last column is S-LoRA r=18 minus LoRA
+r=8.
+
+| Group | Task | LoRA r4 | LoRA r8 | S-LoRA r4 | S-LoRA r8 | S-LoRA r18 | Δ (r18 − LoRA r8) |
+|---|---|---|---|---|---|---|---|
+| Natural | cifar | 64.7 | 64.7 | **67.3** | 65.7 | 64.8 | +0.1 |
+|  | caltech101 | 92.1 | **92.4** | 91.3 | 92.1 | 92.1 | -0.3 |
+|  | dtd | **68.9** | 67.5 | 66.7 | 66.9 | 67.3 | -0.2 |
+|  | oxford_flowers102 | 98.4 | 98.2 | **98.7** | 98.4 | 98.4 | +0.2 |
+|  | oxford_iiit_pet | **89.8** | 89.0 | 88.4 | 88.8 | 88.2 | -0.7 |
+|  | svhn | 86.8 | 88.2 | 84.1 | 87.0 | **88.2** | +0.0 |
+|  | sun397 | 50.4 | 49.3 | **51.4** | 51.3 | 50.3 | +1.0 |
+| Specialized | patch_camelyon | 83.3 | 82.9 | 82.8 | **83.7** | 83.2 | +0.3 |
+|  | eurosat | 95.3 | **96.1** | 95.4 | 95.3 | 95.5 | -0.6 |
+|  | resisc45 | 84.9 | **85.3** | 81.5 | 82.9 | 84.6 | -0.7 |
+|  | diabetic_retinopathy | **73.7** | 73.3 | 70.8 | 72.3 | 72.0 | -1.4 |
+| Structured | clevr_count | 74.7 | 72.3 | 76.2 | **76.5** | 75.3 | +3.0 |
+|  | clevr_dist | 63.5 | 63.4 | 63.4 | **64.1** | 63.0 | -0.4 |
+|  | dmlab | 48.2 | **48.5** | 46.4 | 46.9 | 48.4 | -0.1 |
+|  | kitti | 78.6 | **81.6** | 77.1 | 76.8 | 78.9 | -2.7 |
+|  | dsprites_loc | 78.4 | **79.6** | 74.1 | 76.0 | 77.0 | -2.7 |
+|  | dsprites_ori | **46.7** | 45.8 | 43.3 | 45.6 | 45.9 | +0.1 |
+|  | smallnorb_azi | 30.1 | 29.8 | 29.4 | 30.1 | **31.3** | +1.5 |
+|  | smallnorb_ele | 35.2 | 33.1 | **35.4** | 35.0 | 34.0 | +0.9 |
+
+Cost, measured on an idle A100 at batch 64 × 224px:
+
+| | LoRA r4 | LoRA r8 | S-LoRA r4 | S-LoRA r8 | S-LoRA r18 |
+|---|---|---|---|---|---|
+| Forward, unmerged | 57.7 ms | 57.7 ms | 62.2 ms | 62.1 ms | 63.4 ms |
+| Forward + backward, unmerged | 137.4 ms | 137.6 ms | 141.6 ms | 141.7 ms | 145.4 ms |
+| **Forward, merged** | **35.5 ms** | **35.3 ms** | **35.1 ms** | **35.1 ms** | **35.1 ms** |
+| Peak training memory | 8.2 GB | 8.2 GB | 8.4 GB | 8.4 GB | 8.5 GB |
+
+- Training is 3–6% slower than LoRA, against 27% on LLaMA3-8B.
+- After merging, latency is identical.
+
+**These runs use `--slora-impl lowrank`.** The forward is `W₀x + s·(x·A_eff)·B_eff`:
+`A_eff = PᵀA` for wide matrices, and `B_eff = B·[I | X̄ᵀ]` (permuted) for tall ones.
+- It is the same function and gradient as the factored `P·C` path, matching to 1e-15 in
+  fp64.
+- The frozen part goes through `W₀` itself, so rounding error matches LoRA's.
+- With the factored path, the untrained model deviated from the base by 1.9e-2 under TF32
+  and 9.3e-2 under bf16. LoRA deviates by 1.4e-3 and 1.6e-2.
+- The commonsense runs above still use the factored path.
+
+Open:
+- One seed, so the 0.2–0.5-point gaps between averages are not resolved.
+- One lr, shared by all runs, with no sweep.
+- Published VTAB numbers are not placed alongside yet. Most of them adapt only q, v at
+  r=8, so their budget differs from these runs.

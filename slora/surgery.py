@@ -17,6 +17,7 @@ import torch.nn as nn
 from slora.adapters import (
     LoRAConv1D,
     LoRALinear,
+    LoRASplitLinear,
     RowSpaceLinear,
     VeRALayer,
     VeRAShared,
@@ -52,6 +53,11 @@ TARGETS = {
     # LoRA r=32 on these five gives exactly the 0.83/0.71/0.78/0.63 % it lists.
     "qkvud": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj",
               "mlp.up_proj", "mlp.down_proj"],
+
+    # timm ViT: ca 6 ma tran q,k,v,o,fc1,fc2. q,k,v nam chung trong attn.qkv
+    # (3d x d, khong vuong): S-LoRA phan ra ca khoi gop, con LoRA thi dung
+    # apply_lora(..., split={"attn.qkv": 3}) de co 3 adapter rieng cho q, k, v.
+    "vit_all6": ["attn.qkv", "attn.proj", "mlp.fc1", "mlp.fc2"],
 }
 
 
@@ -67,7 +73,8 @@ def get_blocks(model):
                  "model.layers",                     # Qwen2, Llama, Mistral, Gemma
                  "model.decoder.layers",             # OPT, BART
                  "model.language_model.layers",      # Gemma 3 multimodal
-                 "language_model.model.layers"):     # LLaVA-style
+                 "language_model.model.layers",      # LLaVA-style
+                 "blocks"):                          # timm ViT / DeiT
         obj = model
         try:
             for part in path.split("."):
@@ -162,19 +169,26 @@ def _freeze_then_unfreeze_rowspace(model):
 
 # ======================================================= inject: LoRA
 
-def apply_lora(model, targets, rank, alpha, rank_square=None, alpha_square=None):
+def apply_lora(model, targets, rank, alpha, rank_square=None, alpha_square=None,
+               split=None):
     """Standard LoRA.
 
     ``rank_square`` / ``alpha_square`` allow a separate rank for square
-    matrices, for fair comparison with hybrid mode.
+    matrices, for fair comparison with hybrid mode.  ``split`` maps a target
+    to a number of equal output chunks that each get their own adapter
+    (``{"attn.qkv": 3}`` for timm's fused q, k, v).
     """
     rs  = rank  if rank_square  is None else rank_square
     als = alpha if alpha_square is None else alpha_square
+    split = split or {}
 
     for block in get_blocks(model):
         for name in targets:
             parent, attr = resolve(block, name)
             mod = getattr(parent, attr)
+            if name in split:
+                setattr(parent, attr, LoRASplitLinear(mod, rank, alpha, split[name]))
+                continue
             w, _ = conv1d_weight(mod)
             r, al = (rs, als) if w.shape[0] == w.shape[1] else (rank, alpha)
             wrap = LoRALinear if isinstance(mod, nn.Linear) else LoRAConv1D
@@ -183,7 +197,7 @@ def apply_lora(model, targets, rank, alpha, rank_square=None, alpha_square=None)
     for p in model.parameters():
         p.requires_grad_(False)
     for m in model.modules():
-        if isinstance(m, (LoRALinear, LoRAConv1D)):
+        if isinstance(m, (LoRALinear, LoRAConv1D, LoRASplitLinear)):
             m.down.requires_grad_(True)
             m.up.requires_grad_(True)
     return model
@@ -227,7 +241,7 @@ def apply_vera(model, targets, rank, seed=0, d_init=0.1):
 
 def apply_hybrid(model, targets, rank, rank_square, alpha=None,
                  alpha_square=None, basis="colperm", dtype=torch.float64,
-                 verbose=True, cache=None, norm=None):
+                 verbose=True, cache=None, norm=None, impl="factored"):
     """S-LoRA on non-square layers, standard LoRA on square ones.
 
     Square matrices (q_proj, o_proj) admit no useful factorization — [I|X̄]
@@ -255,7 +269,8 @@ def apply_hybrid(model, targets, rank, rank_square, alpha=None,
                 fac, orient, info = factorize_cached(w, basis, dtype, cp)
                 bias = mod.bias.data if getattr(mod, "bias", None) is not None else None
                 layer = RowSpaceLinear(fac, orient, bias, mod.weight.dtype, rank, alpha,
-                                       norm=norm)
+                                       norm=norm, impl=impl,
+                                       weight=mod.weight.data if impl == "lowrank" else None)
                 info.update(layer=f"h.{i}.{name}", target=name, k=layer.k,
                             orient=orient, shape=tuple(w.shape))
                 report.append(info)
@@ -313,9 +328,12 @@ def merge_lora(model, targets):
         for name in targets:
             parent, attr = resolve(block, name)
             mod = getattr(parent, attr)
-            if not isinstance(mod, (LoRALinear, LoRAConv1D)):
+            if not isinstance(mod, (LoRALinear, LoRAConv1D, LoRASplitLinear)):
                 continue
-            delta = mod.scale * (mod.down.data.double() @ mod.up.data.double())
+            if isinstance(mod, LoRASplitLinear):
+                delta = mod.delta()
+            else:
+                delta = mod.scale * (mod.down.data.double() @ mod.up.data.double())
             w = mod.base.weight.data
             w += (delta.T if isinstance(mod.base, nn.Linear) else delta).to(w.dtype)
             setattr(parent, attr, mod.base)

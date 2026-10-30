@@ -1,0 +1,256 @@
+
+=== vtab_hybrid_r4_rms_lr0.001_s0 ===  19 tac vu, da xong 0
+
+  [cifar] Natural  100 lop  train 1000  test 10000
+      ep  10  loss 2.4982  train acc  62.7%  lr 1.00e-03  53s
+      ep  20  loss 0.4749  train acc  94.3%  lr 9.70e-04  105s
+      ep  30  loss 0.1924  train acc  98.8%  lr 8.83e-04  158s
+      ep  40  loss 0.1046  train acc  99.2%  lr 7.50e-04  210s
+      ep  50  loss 0.0827  train acc  98.7%  lr 5.87e-04  263s
+      ep  60  loss 0.0590  train acc  99.3%  lr 4.13e-04  315s
+      ep  70  loss 0.0569  train acc  99.6%  lr 2.50e-04  368s
+      ep  80  loss 0.0394  train acc  99.8%  lr 1.17e-04  420s
+      ep  90  loss 0.0408  train acc  99.6%  lr 3.02e-05  473s
+      ep 100  loss 0.0445  train acc  99.5%  lr 0.00e+00  519s
+    => cifar: test 67.28%  (adapter 0.295M, train 519s, peak 8.4 GB)
+    do tre b64: {'fwd_ms': 145.23, 'fwdbwd_ms': 330.25, 'merged_fwd_ms': 79.1}
+
+  [caltech101] Natural  102 lop  train 1000  test 6084
+      ep  10  loss 1.4458  train acc  92.3%  lr 1.00e-03  53s
+      ep  20  loss 0.1736  train acc  99.3%  lr 9.70e-04  105s
+      ep  30  loss 0.0626  train acc  99.8%  lr 8.83e-04  157s
+      ep  40  loss 0.0418  train acc  99.7%  lr 7.50e-04  210s
+      ep  50  loss 0.0248  train acc 100.0%  lr 5.87e-04  262s
+      ep  60  loss 0.0236  train acc  99.9%  lr 4.13e-04  315s
+      ep  70  loss 0.0228  train acc  99.8%  lr 2.50e-04  367s
+      ep  80  loss 0.0182  train acc  99.9%  lr 1.17e-04  420s
+      ep  90  loss 0.0161  train acc 100.0%  lr 3.02e-05  471s
+      ep 100  loss 0.0142  train acc 100.0%  lr 0.00e+00  515s
+    => caltech101: test 91.31%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [dtd] Natural  47 lop  train 1000  test 1880
+      ep  10  loss 1.5700  train acc  72.7%  lr 1.00e-03  52s
+      ep  20  loss 0.2847  train acc  96.0%  lr 9.70e-04  105s
+      ep  30  loss 0.1148  train acc  98.8%  lr 8.83e-04  157s
+      ep  40  loss 0.0659  train acc  99.2%  lr 7.50e-04  210s
+      ep  50  loss 0.0485  train acc  99.2%  lr 5.87e-04  262s
+      ep  60  loss 0.0357  train acc  99.6%  lr 4.13e-04  315s
+      ep  70  loss 0.0373  train acc  99.5%  lr 2.50e-04  367s
+      ep  80  loss 0.0281  train acc  99.7%  lr 1.17e-04  420s
+      ep  90  loss 0.0252  train acc  99.7%  lr 3.02e-05  462s
+      ep 100  loss 0.0231  train acc  99.7%  lr 0.00e+00  514s
+    => dtd: test 66.65%  (adapter 0.295M, train 514s, peak 8.4 GB)
+
+  [oxford_flowers102] Natural  102 lop  train 1000  test 6149
+      ep  10  loss 1.1360  train acc  98.7%  lr 1.00e-03  52s
+      ep  20  loss 0.1167  train acc 100.0%  lr 9.70e-04  105s
+      ep  30  loss 0.0549  train acc  99.8%  lr 8.83e-04  157s
+      ep  40  loss 0.0308  train acc 100.0%  lr 7.50e-04  210s
+      ep  50  loss 0.0188  train acc 100.0%  lr 5.87e-04  262s
+      ep  60  loss 0.0152  train acc 100.0%  lr 4.13e-04  315s
+      ep  70  loss 0.0168  train acc 100.0%  lr 2.50e-04  367s
+      ep  80  loss 0.0115  train acc 100.0%  lr 1.17e-04  417s
+      ep  90  loss 0.0148  train acc 100.0%  lr 3.02e-05  462s
+      ep 100  loss 0.0132  train acc 100.0%  lr 0.00e+00  514s
+    => oxford_flowers102: test 98.67%  (adapter 0.295M, train 514s, peak 8.4 GB)
+
+  [oxford_iiit_pet] Natural  37 lop  train 1000  test 3669
+      ep  10  loss 0.6314  train acc  94.2%  lr 1.00e-03  52s
+      ep  20  loss 0.1013  train acc  98.9%  lr 9.70e-04  105s
+      ep  30  loss 0.0565  train acc  99.2%  lr 8.83e-04  157s
+      ep  40  loss 0.0510  train acc  99.0%  lr 7.50e-04  210s
+      ep  50  loss 0.0208  train acc  99.9%  lr 5.87e-04  262s
+      ep  60  loss 0.0227  train acc  99.8%  lr 4.13e-04  315s
+      ep  70  loss 0.0154  train acc 100.0%  lr 2.50e-04  367s
+      ep  80  loss 0.0168  train acc  99.7%  lr 1.17e-04  411s
+      ep  90  loss 0.0166  train acc  99.8%  lr 3.02e-05  463s
+      ep 100  loss 0.0137  train acc  99.9%  lr 0.00e+00  516s
+    => oxford_iiit_pet: test 88.36%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [svhn] Natural  10 lop  train 1000  test 26032
+      ep  10  loss 0.9866  train acc  68.1%  lr 1.00e-03  52s
+      ep  20  loss 0.2139  train acc  93.7%  lr 9.70e-04  105s
+      ep  30  loss 0.0801  train acc  97.6%  lr 8.83e-04  157s
+      ep  40  loss 0.0668  train acc  98.0%  lr 7.50e-04  210s
+      ep  50  loss 0.0717  train acc  97.8%  lr 5.87e-04  262s
+      ep  60  loss 0.0490  train acc  98.8%  lr 4.13e-04  314s
+      ep  70  loss 0.0237  train acc  99.2%  lr 2.50e-04  365s
+      ep  80  loss 0.0345  train acc  99.1%  lr 1.17e-04  411s
+      ep  90  loss 0.0151  train acc  99.6%  lr 3.02e-05  463s
+      ep 100  loss 0.0285  train acc  99.3%  lr 0.00e+00  516s
+    => svhn: test 84.09%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [sun397] Natural  397 lop  train 1000  test 21750
+      ep  10  loss 3.5178  train acc  51.4%  lr 1.00e-03  52s
+      ep  20  loss 0.7483  train acc  94.6%  lr 9.70e-04  105s
+      ep  30  loss 0.2492  train acc  99.4%  lr 8.83e-04  157s
+      ep  40  loss 0.1394  train acc  99.8%  lr 7.50e-04  210s
+      ep  50  loss 0.0935  train acc  99.9%  lr 5.87e-04  263s
+      ep  60  loss 0.0645  train acc  99.9%  lr 4.13e-04  314s
+      ep  70  loss 0.0656  train acc  99.8%  lr 2.50e-04  362s
+      ep  80  loss 0.0489  train acc  99.9%  lr 1.17e-04  411s
+      ep  90  loss 0.0535  train acc 100.0%  lr 3.02e-05  464s
+      ep 100  loss 0.0517  train acc 100.0%  lr 0.00e+00  516s
+    => sun397: test 51.42%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [patch_camelyon] Specialized  2 lop  train 1000  test 32768
+      ep  10  loss 0.2984  train acc  87.3%  lr 1.00e-03  52s
+      ep  20  loss 0.0860  train acc  97.2%  lr 9.70e-04  105s
+      ep  30  loss 0.0452  train acc  98.4%  lr 8.83e-04  157s
+      ep  40  loss 0.0434  train acc  98.6%  lr 7.50e-04  210s
+      ep  50  loss 0.0079  train acc  99.8%  lr 5.87e-04  262s
+      ep  60  loss 0.0102  train acc  99.6%  lr 4.13e-04  313s
+      ep  70  loss 0.0048  train acc  99.9%  lr 2.50e-04  359s
+      ep  80  loss 0.0066  train acc  99.8%  lr 1.17e-04  411s
+      ep  90  loss 0.0058  train acc  99.8%  lr 3.02e-05  463s
+      ep 100  loss 0.0058  train acc  99.9%  lr 0.00e+00  516s
+    => patch_camelyon: test 82.75%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [eurosat] Specialized  10 lop  train 1000  test 5400
+      ep  10  loss 0.2316  train acc  94.8%  lr 1.00e-03  52s
+      ep  20  loss 0.0652  train acc  98.4%  lr 9.70e-04  105s
+      ep  30  loss 0.0303  train acc  99.0%  lr 8.83e-04  157s
+      ep  40  loss 0.0224  train acc  99.6%  lr 7.50e-04  210s
+      ep  50  loss 0.0247  train acc  99.5%  lr 5.87e-04  260s
+      ep  60  loss 0.0081  train acc  99.8%  lr 4.13e-04  307s
+      ep  70  loss 0.0131  train acc  99.7%  lr 2.50e-04  359s
+      ep  80  loss 0.0043  train acc  99.9%  lr 1.17e-04  412s
+      ep  90  loss 0.0057  train acc  99.8%  lr 3.02e-05  464s
+      ep 100  loss 0.0064  train acc  99.9%  lr 0.00e+00  516s
+    => eurosat: test 95.41%  (adapter 0.295M, train 516s, peak 8.4 GB)
+
+  [resisc45] Specialized  45 lop  train 1000  test 6300
+      ep  10  loss 1.3887  train acc  78.1%  lr 1.00e-03  52s
+      ep  20  loss 0.2132  train acc  97.2%  lr 9.70e-04  105s
+      ep  30  loss 0.1009  train acc  98.7%  lr 8.83e-04  157s
+      ep  40  loss 0.0597  train acc  98.8%  lr 7.50e-04  210s
+      ep  50  loss 0.0395  train acc  99.6%  lr 5.87e-04  253s
+      ep  60  loss 0.0233  train acc  99.9%  lr 4.13e-04  305s
+      ep  70  loss 0.0217  train acc  99.7%  lr 2.50e-04  358s
+      ep  80  loss 0.0191  train acc  99.8%  lr 1.17e-04  410s
+      ep  90  loss 0.0199  train acc  99.9%  lr 3.02e-05  462s
+      ep 100  loss 0.0165  train acc  99.9%  lr 0.00e+00  515s
+    => resisc45: test 81.51%  (adapter 0.295M, train 515s, peak 8.4 GB)
+
+  [diabetic_retinopathy] Specialized  5 lop  train 1000  test 42670
+      ep  10  loss 0.6909  train acc  77.3%  lr 1.00e-03  52s
+      ep  20  loss 0.2560  train acc  91.6%  lr 9.70e-04  105s
+      ep  30  loss 0.1292  train acc  96.4%  lr 8.83e-04  157s
+      ep  40  loss 0.0483  train acc  98.4%  lr 7.50e-04  207s
+      ep  50  loss 0.0684  train acc  97.5%  lr 5.87e-04  260s
+      ep  60  loss 0.0303  train acc  99.2%  lr 4.13e-04  306s
+      ep  70  loss 0.0133  train acc  99.6%  lr 2.50e-04  358s
+      ep  80  loss 0.0227  train acc  99.5%  lr 1.17e-04  410s
+      ep  90  loss 0.0203  train acc  99.5%  lr 3.02e-05  463s
+      ep 100  loss 0.0264  train acc  99.3%  lr 0.00e+00  515s
+    => diabetic_retinopathy: test 70.75%  (adapter 0.295M, train 515s, peak 8.4 GB)
+
+  [clevr_count] Structured  8 lop  train 1000  test 15000
+      ep  10  loss 0.9699  train acc  60.0%  lr 1.00e-03  52s
+      ep  20  loss 0.5338  train acc  77.5%  lr 9.70e-04  105s
+      ep  30  loss 0.2341  train acc  93.0%  lr 8.83e-04  155s
+      ep  40  loss 0.1205  train acc  96.2%  lr 7.50e-04  201s
+      ep  50  loss 0.0828  train acc  97.5%  lr 5.87e-04  253s
+      ep  60  loss 0.0858  train acc  97.3%  lr 4.13e-04  306s
+      ep  70  loss 0.0525  train acc  98.4%  lr 2.50e-04  358s
+      ep  80  loss 0.0606  train acc  98.7%  lr 1.17e-04  410s
+      ep  90  loss 0.0289  train acc  99.2%  lr 3.02e-05  463s
+      ep 100  loss 0.0420  train acc  99.0%  lr 0.00e+00  515s
+    => clevr_count: test 76.23%  (adapter 0.295M, train 515s, peak 8.4 GB)
+
+  [clevr_dist] Structured  6 lop  train 1000  test 15000
+      ep  10  loss 0.8722  train acc  65.0%  lr 1.00e-03  52s
+      ep  20  loss 0.3951  train acc  85.0%  lr 9.70e-04  105s
+      ep  30  loss 0.1580  train acc  94.5%  lr 8.83e-04  152s
+      ep  40  loss 0.0758  train acc  98.2%  lr 7.50e-04  200s
+      ep  50  loss 0.0754  train acc  98.1%  lr 5.87e-04  253s
+      ep  60  loss 0.0706  train acc  97.3%  lr 4.13e-04  305s
+      ep  70  loss 0.0565  train acc  98.6%  lr 2.50e-04  358s
+      ep  80  loss 0.0403  train acc  99.1%  lr 1.17e-04  410s
+      ep  90  loss 0.0314  train acc  99.2%  lr 3.02e-05  463s
+      ep 100  loss 0.0349  train acc  99.1%  lr 0.00e+00  515s
+    => clevr_dist: test 63.38%  (adapter 0.295M, train 515s, peak 8.4 GB)
+
+  [dmlab] Structured  6 lop  train 1000  test 22735
+      ep  10  loss 1.1223  train acc  51.8%  lr 1.00e-03  52s
+      ep  20  loss 0.3574  train acc  88.5%  lr 9.70e-04  103s
+      ep  30  loss 0.1787  train acc  94.7%  lr 8.83e-04  147s
+      ep  40  loss 0.1028  train acc  96.8%  lr 7.50e-04  199s
+      ep  50  loss 0.0708  train acc  97.6%  lr 5.87e-04  251s
+      ep  60  loss 0.0551  train acc  98.9%  lr 4.13e-04  304s
+      ep  70  loss 0.0410  train acc  99.0%  lr 2.50e-04  356s
+      ep  80  loss 0.0372  train acc  98.6%  lr 1.17e-04  409s
+      ep  90  loss 0.0225  train acc  99.6%  lr 3.02e-05  461s
+      ep 100  loss 0.0329  train acc  99.1%  lr 0.00e+00  513s
+    => dmlab: test 46.43%  (adapter 0.295M, train 513s, peak 8.4 GB)
+
+  [kitti] Structured  4 lop  train 1000  test 711
+      ep  10  loss 0.3262  train acc  89.1%  lr 1.00e-03  51s
+      ep  20  loss 0.0907  train acc  96.5%  lr 9.70e-04  96s
+      ep  30  loss 0.0365  train acc  99.0%  lr 8.83e-04  148s
+      ep  40  loss 0.0441  train acc  98.3%  lr 7.50e-04  201s
+      ep  50  loss 0.0095  train acc  99.8%  lr 5.87e-04  253s
+      ep  60  loss 0.0193  train acc  99.5%  lr 4.13e-04  305s
+      ep  70  loss 0.0180  train acc  99.6%  lr 2.50e-04  358s
+      ep  80  loss 0.0097  train acc  99.7%  lr 1.17e-04  410s
+      ep  90  loss 0.0053  train acc  99.9%  lr 3.02e-05  463s
+      ep 100  loss 0.0086  train acc  99.7%  lr 0.00e+00  515s
+    => kitti: test 77.07%  (adapter 0.295M, train 515s, peak 8.4 GB)
+
+  [dsprites_loc] Structured  16 lop  train 1000  test 73728
+      ep  10  loss 1.5699  train acc  36.0%  lr 1.00e-03  51s
+      ep  20  loss 0.8986  train acc  66.4%  lr 9.70e-04  104s
+      ep  30  loss 0.7370  train acc  70.4%  lr 8.83e-04  157s
+      ep  40  loss 0.4200  train acc  87.9%  lr 7.50e-04  203s
+      ep  50  loss 0.2263  train acc  95.6%  lr 5.87e-04  255s
+      ep  60  loss 0.1560  train acc  96.0%  lr 4.13e-04  307s
+      ep  70  loss 0.1426  train acc  97.2%  lr 2.50e-04  360s
+      ep  80  loss 0.1112  train acc  97.5%  lr 1.17e-04  412s
+      ep  90  loss 0.0908  train acc  98.4%  lr 3.02e-05  465s
+      ep 100  loss 0.0875  train acc  98.9%  lr 0.00e+00  517s
+    => dsprites_loc: test 74.11%  (adapter 0.295M, train 517s, peak 8.4 GB)
+
+  [dsprites_ori] Structured  16 lop  train 1000  test 73728
+      ep  10  loss 1.9476  train acc  30.8%  lr 1.00e-03  53s
+      ep  20  loss 0.8038  train acc  72.6%  lr 9.70e-04  106s
+      ep  30  loss 0.3664  train acc  88.3%  lr 8.83e-04  151s
+      ep  40  loss 0.1690  train acc  96.7%  lr 7.50e-04  204s
+      ep  50  loss 0.1272  train acc  97.0%  lr 5.87e-04  256s
+      ep  60  loss 0.0832  train acc  98.4%  lr 4.13e-04  308s
+      ep  70  loss 0.0764  train acc  98.6%  lr 2.50e-04  361s
+      ep  80  loss 0.0632  train acc  98.4%  lr 1.17e-04  413s
+      ep  90  loss 0.0550  train acc  99.0%  lr 3.02e-05  466s
+      ep 100  loss 0.0709  train acc  98.1%  lr 0.00e+00  518s
+    => dsprites_ori: test 43.34%  (adapter 0.295M, train 518s, peak 8.4 GB)
+
+  [smallnorb_azi] Structured  18 lop  train 1000  test 12150
+      ep  10  loss 2.1887  train acc  36.4%  lr 1.00e-03  52s
+      ep  20  loss 0.7706  train acc  81.7%  lr 9.70e-04  105s
+      ep  30  loss 0.3240  train acc  93.1%  lr 8.83e-04  157s
+      ep  40  loss 0.1931  train acc  95.2%  lr 7.50e-04  210s
+      ep  50  loss 0.1720  train acc  96.0%  lr 5.87e-04  262s
+      ep  60  loss 0.0839  train acc  98.8%  lr 4.13e-04  314s
+      ep  70  loss 0.0868  train acc  98.2%  lr 2.50e-04  367s
+      ep  80  loss 0.0733  train acc  98.3%  lr 1.17e-04  419s
+      ep  90  loss 0.0728  train acc  98.3%  lr 3.02e-05  472s
+      ep 100  loss 0.0785  train acc  98.3%  lr 0.00e+00  510s
+    => smallnorb_azi: test 29.39%  (adapter 0.295M, train 510s, peak 8.4 GB)
+
+  [smallnorb_ele] Structured  9 lop  train 1000  test 12150
+      ep  10  loss 1.4187  train acc  42.7%  lr 1.00e-03  22s
+      ep  20  loss 0.7142  train acc  74.7%  lr 9.70e-04  45s
+      ep  30  loss 0.3473  train acc  88.9%  lr 8.83e-04  67s
+      ep  40  loss 0.1889  train acc  94.2%  lr 7.50e-04  89s
+      ep  50  loss 0.1297  train acc  96.2%  lr 5.87e-04  112s
+      ep  60  loss 0.0980  train acc  97.2%  lr 4.13e-04  134s
+      ep  70  loss 0.0933  train acc  97.5%  lr 2.50e-04  156s
+      ep  80  loss 0.0832  train acc  97.8%  lr 1.17e-04  178s
+      ep  90  loss 0.0482  train acc  99.0%  lr 3.02e-05  201s
+      ep 100  loss 0.0643  train acc  98.2%  lr 0.00e+00  223s
+    => smallnorb_ele: test 35.44%  (adapter 0.295M, train 223s, peak 8.4 GB)
+
+  TONG KET vtab_hybrid_r4_rms_lr0.001_s0
+    Natural       78.25  (7/7 tac vu)
+    Specialized   82.61  (4/4 tac vu)
+    Structured    55.67  (8/8 tac vu)
+    TB 19 tac vu  69.66   TB 3 nhom  72.18

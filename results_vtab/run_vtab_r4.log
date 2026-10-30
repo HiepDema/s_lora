@@ -1,0 +1,13 @@
+### r4 bat dau 2026-10-29 21:13:45
+### r4 ket thuc rc=0/0 2026-10-30 00:09:33
+=== vtab_lora_r4_lr0.001_s0 ===  1 tac vu, da xong 0
+    do tre b64: {'fwd_ms': 57.69, 'fwdbwd_ms': 137.36, 'merged_fwd_ms': 35.46}
+=== vtab_lora_r8_lr0.001_s0 ===  1 tac vu, da xong 0
+    do tre b64: {'fwd_ms': 57.74, 'fwdbwd_ms': 137.61, 'merged_fwd_ms': 35.28}
+=== vtab_hybrid_r4_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+    do tre b64: {'fwd_ms': 62.22, 'fwdbwd_ms': 141.6, 'merged_fwd_ms': 35.12}
+=== vtab_hybrid_r8_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+    do tre b64: {'fwd_ms': 62.14, 'fwdbwd_ms': 141.72, 'merged_fwd_ms': 35.09}
+=== vtab_hybrid_r18_rms_lr0.001_s0 ===  1 tac vu, da xong 0
+    do tre b64: {'fwd_ms': 63.43, 'fwdbwd_ms': 145.36, 'merged_fwd_ms': 35.1}
+### bench xong 2026-10-30 00:11:16
