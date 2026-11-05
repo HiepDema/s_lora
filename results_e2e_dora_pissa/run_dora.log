@@ -1,0 +1,294 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== dora_r4_na_s0 ===
+model=Qwen/Qwen2.5-1.5B  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap E2E NLG...
+  train 42061 vi du | val 4672 | test 630 MR duy nhat
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:  50%|████▉     | 168/338 [00:00<00:00, 1679.53it/s]Loading weights:  99%|█████████▉| 336/338 [00:00<00:00, 1650.61it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1662.40it/s]
+
+  TRAIN DUOC: 0.416 M (0.027 % cua 1544.13 M)   [dung model + phan ra: 1.8s]
+
+  train: 42061 vi du, 26290 buoc, lr=0.0002 (linear), batch=8
+    ep 0 step 100/26290  loss 3.6687  lr 4.00e-05  3.07 it/s  ETA 142m
+    ep 0 step 200/26290  loss 3.1881  lr 8.00e-05  3.10 it/s  ETA 140m
+    ep 0 step 300/26290  loss 2.9076  lr 1.20e-04  3.11 it/s  ETA 139m
+    ep 0 step 400/26290  loss 2.8514  lr 1.60e-04  3.07 it/s  ETA 141m
+    ep 0 step 500/26290  loss 2.7974  lr 2.00e-04  3.04 it/s  ETA 141m
+    ep 0 step 600/26290  loss 2.7783  lr 1.99e-04  3.03 it/s  ETA 141m
+    ep 0 step 700/26290  loss 2.7483  lr 1.98e-04  3.00 it/s  ETA 142m
+    ep 0 step 800/26290  loss 2.7331  lr 1.98e-04  2.99 it/s  ETA 142m
+    ep 0 step 900/26290  loss 2.7116  lr 1.97e-04  2.99 it/s  ETA 142m
+    ep 0 step 1000/26290  loss 2.7080  lr 1.96e-04  2.99 it/s  ETA 141m
+    ep 0 step 1100/26290  loss 2.6904  lr 1.95e-04  2.98 it/s  ETA 141m
+    ep 0 step 1200/26290  loss 2.6909  lr 1.95e-04  2.97 it/s  ETA 141m
+    ep 0 step 1300/26290  loss 2.6546  lr 1.94e-04  2.96 it/s  ETA 140m
+    ep 0 step 1400/26290  loss 2.6994  lr 1.93e-04  2.96 it/s  ETA 140m
+    ep 0 step 1500/26290  loss 2.7127  lr 1.92e-04  2.96 it/s  ETA 139m
+    ep 0 step 1600/26290  loss 2.7159  lr 1.91e-04  2.96 it/s  ETA 139m
+    ep 0 step 1700/26290  loss 2.6920  lr 1.91e-04  2.96 it/s  ETA 139m
+    ep 0 step 1800/26290  loss 2.6457  lr 1.90e-04  2.95 it/s  ETA 138m
+    ep 0 step 1900/26290  loss 2.6836  lr 1.89e-04  2.94 it/s  ETA 138m
+    ep 0 step 2000/26290  loss 2.6895  lr 1.88e-04  2.94 it/s  ETA 138m
+    ep 0 step 2100/26290  loss 2.7039  lr 1.88e-04  2.94 it/s  ETA 137m
+    ep 0 step 2200/26290  loss 2.6560  lr 1.87e-04  2.93 it/s  ETA 137m
+    ep 0 step 2300/26290  loss 2.7081  lr 1.86e-04  2.94 it/s  ETA 136m
+    ep 0 step 2400/26290  loss 2.6722  lr 1.85e-04  2.93 it/s  ETA 136m
+    ep 0 step 2500/26290  loss 2.6634  lr 1.84e-04  2.94 it/s  ETA 135m
+    ep 0 step 2600/26290  loss 2.6774  lr 1.84e-04  2.94 it/s  ETA 134m
+    ep 0 step 2700/26290  loss 2.6381  lr 1.83e-04  2.94 it/s  ETA 134m
+    ep 0 step 2800/26290  loss 2.6899  lr 1.82e-04  2.93 it/s  ETA 133m
+    ep 0 step 2900/26290  loss 2.6827  lr 1.81e-04  2.94 it/s  ETA 133m
+    ep 0 step 3000/26290  loss 2.6493  lr 1.81e-04  2.94 it/s  ETA 132m
+    ep 0 step 3100/26290  loss 2.6652  lr 1.80e-04  2.94 it/s  ETA 132m
+    ep 0 step 3200/26290  loss 2.6205  lr 1.79e-04  2.94 it/s  ETA 131m
+    ep 0 step 3300/26290  loss 2.6362  lr 1.78e-04  2.94 it/s  ETA 130m
+    ep 0 step 3400/26290  loss 2.6995  lr 1.78e-04  2.93 it/s  ETA 130m
+    ep 0 step 3500/26290  loss 2.6464  lr 1.77e-04  2.93 it/s  ETA 129m
+    ep 0 step 3600/26290  loss 2.6513  lr 1.76e-04  2.93 it/s  ETA 129m
+    ep 0 step 3700/26290  loss 2.6690  lr 1.75e-04  2.93 it/s  ETA 128m
+    ep 0 step 3800/26290  loss 2.6440  lr 1.74e-04  2.93 it/s  ETA 128m
+    ep 0 step 3900/26290  loss 2.6372  lr 1.74e-04  2.94 it/s  ETA 127m
+    ep 0 step 4000/26290  loss 2.6653  lr 1.73e-04  2.94 it/s  ETA 127m
+    ep 0 step 4100/26290  loss 2.6343  lr 1.72e-04  2.94 it/s  ETA 126m
+    ep 0 step 4200/26290  loss 2.6487  lr 1.71e-04  2.93 it/s  ETA 125m
+    ep 0 step 4300/26290  loss 2.6483  lr 1.71e-04  2.94 it/s  ETA 125m
+    ep 0 step 4400/26290  loss 2.6669  lr 1.70e-04  2.93 it/s  ETA 124m
+    ep 0 step 4500/26290  loss 2.6440  lr 1.69e-04  2.94 it/s  ETA 124m
+    ep 0 step 4600/26290  loss 2.6416  lr 1.68e-04  2.94 it/s  ETA 123m
+    ep 0 step 4700/26290  loss 2.6175  lr 1.67e-04  2.93 it/s  ETA 123m
+    ep 0 step 4800/26290  loss 2.6622  lr 1.67e-04  2.93 it/s  ETA 122m
+    ep 0 step 4900/26290  loss 2.6317  lr 1.66e-04  2.94 it/s  ETA 121m
+    ep 0 step 5000/26290  loss 2.6207  lr 1.65e-04  2.94 it/s  ETA 121m
+    ep 0 step 5100/26290  loss 2.6440  lr 1.64e-04  2.94 it/s  ETA 120m
+    ep 0 step 5200/26290  loss 2.6516  lr 1.64e-04  2.94 it/s  ETA 120m
+    [ep 0] val loss 1.1878  ppl 3.280  train 1.1408  gap +0.0470  (115s)  <- tot nhat
+    ep 1 step 5300/26290  loss 2.6391  lr 1.63e-04  2.76 it/s  ETA 127m
+    ep 1 step 5400/26290  loss 2.6612  lr 1.62e-04  2.77 it/s  ETA 126m
+    ep 1 step 5500/26290  loss 2.6332  lr 1.61e-04  2.77 it/s  ETA 125m
+    ep 1 step 5600/26290  loss 2.6272  lr 1.60e-04  2.77 it/s  ETA 124m
+    ep 1 step 5700/26290  loss 2.6253  lr 1.60e-04  2.78 it/s  ETA 124m
+    ep 1 step 5800/26290  loss 2.6397  lr 1.59e-04  2.78 it/s  ETA 123m
+    ep 1 step 5900/26290  loss 2.6173  lr 1.58e-04  2.78 it/s  ETA 122m
+    ep 1 step 6000/26290  loss 2.6712  lr 1.57e-04  2.78 it/s  ETA 122m
+    ep 1 step 6100/26290  loss 2.6629  lr 1.57e-04  2.79 it/s  ETA 121m
+    ep 1 step 6200/26290  loss 2.6257  lr 1.56e-04  2.79 it/s  ETA 120m
+    ep 1 step 6300/26290  loss 2.6518  lr 1.55e-04  2.79 it/s  ETA 119m
+    ep 1 step 6400/26290  loss 2.6089  lr 1.54e-04  2.80 it/s  ETA 119m
+    ep 1 step 6500/26290  loss 2.5754  lr 1.53e-04  2.80 it/s  ETA 118m
+    ep 1 step 6600/26290  loss 2.6154  lr 1.53e-04  2.80 it/s  ETA 117m
+    ep 1 step 6700/26290  loss 2.6267  lr 1.52e-04  2.80 it/s  ETA 117m
+    ep 1 step 6800/26290  loss 2.5850  lr 1.51e-04  2.80 it/s  ETA 116m
+    ep 1 step 6900/26290  loss 2.5948  lr 1.50e-04  2.80 it/s  ETA 115m
+    ep 1 step 7000/26290  loss 2.6396  lr 1.50e-04  2.80 it/s  ETA 115m
+    ep 1 step 7100/26290  loss 2.6050  lr 1.49e-04  2.81 it/s  ETA 114m
+    ep 1 step 7200/26290  loss 2.6314  lr 1.48e-04  2.81 it/s  ETA 113m
+    ep 1 step 7300/26290  loss 2.6138  lr 1.47e-04  2.81 it/s  ETA 113m
+    ep 1 step 7400/26290  loss 2.6344  lr 1.46e-04  2.81 it/s  ETA 112m
+    ep 1 step 7500/26290  loss 2.6342  lr 1.46e-04  2.81 it/s  ETA 111m
+    ep 1 step 7600/26290  loss 2.6208  lr 1.45e-04  2.82 it/s  ETA 111m
+    ep 1 step 7700/26290  loss 2.6211  lr 1.44e-04  2.82 it/s  ETA 110m
+    ep 1 step 7800/26290  loss 2.6123  lr 1.43e-04  2.82 it/s  ETA 109m
+    ep 1 step 7900/26290  loss 2.6036  lr 1.43e-04  2.82 it/s  ETA 109m
+    ep 1 step 8000/26290  loss 2.5982  lr 1.42e-04  2.82 it/s  ETA 108m
+    ep 1 step 8100/26290  loss 2.6127  lr 1.41e-04  2.82 it/s  ETA 107m
+    ep 1 step 8200/26290  loss 2.5875  lr 1.40e-04  2.83 it/s  ETA 107m
+    ep 1 step 8300/26290  loss 2.6153  lr 1.40e-04  2.83 it/s  ETA 106m
+    ep 1 step 8400/26290  loss 2.6273  lr 1.39e-04  2.83 it/s  ETA 105m
+    ep 1 step 8500/26290  loss 2.6332  lr 1.38e-04  2.83 it/s  ETA 105m
+    ep 1 step 8600/26290  loss 2.6067  lr 1.37e-04  2.83 it/s  ETA 104m
+    ep 1 step 8700/26290  loss 2.6214  lr 1.36e-04  2.83 it/s  ETA 103m
+    ep 1 step 8800/26290  loss 2.6087  lr 1.36e-04  2.84 it/s  ETA 103m
+    ep 1 step 8900/26290  loss 2.6186  lr 1.35e-04  2.84 it/s  ETA 102m
+    ep 1 step 9000/26290  loss 2.6185  lr 1.34e-04  2.84 it/s  ETA 102m
+    ep 1 step 9100/26290  loss 2.6110  lr 1.33e-04  2.84 it/s  ETA 101m
+    ep 1 step 9200/26290  loss 2.6306  lr 1.33e-04  2.84 it/s  ETA 100m
+    ep 1 step 9300/26290  loss 2.6059  lr 1.32e-04  2.84 it/s  ETA 100m
+    ep 1 step 9400/26290  loss 2.6020  lr 1.31e-04  2.84 it/s  ETA 99m
+    ep 1 step 9500/26290  loss 2.6465  lr 1.30e-04  2.84 it/s  ETA 98m
+    ep 1 step 9600/26290  loss 2.6301  lr 1.29e-04  2.84 it/s  ETA 98m
+    ep 1 step 9700/26290  loss 2.5997  lr 1.29e-04  2.85 it/s  ETA 97m
+    ep 1 step 9800/26290  loss 2.5968  lr 1.28e-04  2.85 it/s  ETA 97m
+    ep 1 step 9900/26290  loss 2.6013  lr 1.27e-04  2.85 it/s  ETA 96m
+    ep 1 step 10000/26290  loss 2.6139  lr 1.26e-04  2.85 it/s  ETA 95m
+    ep 1 step 10100/26290  loss 2.5746  lr 1.26e-04  2.85 it/s  ETA 95m
+    ep 1 step 10200/26290  loss 2.5944  lr 1.25e-04  2.85 it/s  ETA 94m
+    ep 1 step 10300/26290  loss 2.5954  lr 1.24e-04  2.85 it/s  ETA 93m
+    ep 1 step 10400/26290  loss 2.6279  lr 1.23e-04  2.85 it/s  ETA 93m
+    ep 1 step 10500/26290  loss 2.5937  lr 1.22e-04  2.85 it/s  ETA 92m
+    [ep 1] val loss 1.1637  ppl 3.202  train 1.1178  gap +0.0459  (113s)  <- tot nhat
+    ep 2 step 10600/26290  loss 2.5849  lr 1.22e-04  2.77 it/s  ETA 94m
+    ep 2 step 10700/26290  loss 2.5769  lr 1.21e-04  2.77 it/s  ETA 94m
+    ep 2 step 10800/26290  loss 2.6182  lr 1.20e-04  2.77 it/s  ETA 93m
+    ep 2 step 10900/26290  loss 2.5711  lr 1.19e-04  2.78 it/s  ETA 92m
+    ep 2 step 11000/26290  loss 2.6036  lr 1.19e-04  2.78 it/s  ETA 92m
+    ep 2 step 11100/26290  loss 2.5797  lr 1.18e-04  2.78 it/s  ETA 91m
+    ep 2 step 11200/26290  loss 2.5894  lr 1.17e-04  2.78 it/s  ETA 90m
+    ep 2 step 11300/26290  loss 2.5813  lr 1.16e-04  2.78 it/s  ETA 90m
+    ep 2 step 11400/26290  loss 2.5910  lr 1.15e-04  2.78 it/s  ETA 89m
+    ep 2 step 11500/26290  loss 2.6220  lr 1.15e-04  2.78 it/s  ETA 89m
+    ep 2 step 11600/26290  loss 2.5787  lr 1.14e-04  2.79 it/s  ETA 88m
+    ep 2 step 11700/26290  loss 2.6180  lr 1.13e-04  2.79 it/s  ETA 87m
+    ep 2 step 11800/26290  loss 2.6077  lr 1.12e-04  2.79 it/s  ETA 87m
+    ep 2 step 11900/26290  loss 2.6115  lr 1.12e-04  2.79 it/s  ETA 86m
+    ep 2 step 12000/26290  loss 2.5927  lr 1.11e-04  2.79 it/s  ETA 85m
+    ep 2 step 12100/26290  loss 2.5978  lr 1.10e-04  2.79 it/s  ETA 85m
+    ep 2 step 12200/26290  loss 2.5735  lr 1.09e-04  2.79 it/s  ETA 84m
+    ep 2 step 12300/26290  loss 2.5870  lr 1.08e-04  2.79 it/s  ETA 83m
+    ep 2 step 12400/26290  loss 2.6000  lr 1.08e-04  2.79 it/s  ETA 83m
+    ep 2 step 12500/26290  loss 2.6121  lr 1.07e-04  2.80 it/s  ETA 82m
+    ep 2 step 12600/26290  loss 2.5887  lr 1.06e-04  2.80 it/s  ETA 82m
+    ep 2 step 12700/26290  loss 2.5710  lr 1.05e-04  2.80 it/s  ETA 81m
+    ep 2 step 12800/26290  loss 2.5585  lr 1.05e-04  2.80 it/s  ETA 80m
+    ep 2 step 12900/26290  loss 2.5647  lr 1.04e-04  2.80 it/s  ETA 80m
+    ep 2 step 13000/26290  loss 2.5776  lr 1.03e-04  2.80 it/s  ETA 79m
+    ep 2 step 13100/26290  loss 2.5723  lr 1.02e-04  2.80 it/s  ETA 78m
+    ep 2 step 13200/26290  loss 2.5941  lr 1.02e-04  2.81 it/s  ETA 78m
+    ep 2 step 13300/26290  loss 2.5779  lr 1.01e-04  2.81 it/s  ETA 77m
+    ep 2 step 13400/26290  loss 2.5941  lr 1.00e-04  2.81 it/s  ETA 77m
+    ep 2 step 13500/26290  loss 2.6048  lr 9.92e-05  2.81 it/s  ETA 76m
+    ep 2 step 13600/26290  loss 2.6151  lr 9.84e-05  2.81 it/s  ETA 75m
+    ep 2 step 13700/26290  loss 2.6141  lr 9.76e-05  2.81 it/s  ETA 75m
+    ep 2 step 13800/26290  loss 2.5923  lr 9.69e-05  2.81 it/s  ETA 74m
+    ep 2 step 13900/26290  loss 2.6087  lr 9.61e-05  2.81 it/s  ETA 73m
+    ep 2 step 14000/26290  loss 2.5868  lr 9.53e-05  2.81 it/s  ETA 73m
+    ep 2 step 14100/26290  loss 2.5836  lr 9.45e-05  2.82 it/s  ETA 72m
+    ep 2 step 14200/26290  loss 2.5933  lr 9.38e-05  2.82 it/s  ETA 72m
+    ep 2 step 14300/26290  loss 2.6026  lr 9.30e-05  2.82 it/s  ETA 71m
+    ep 2 step 14400/26290  loss 2.6071  lr 9.22e-05  2.82 it/s  ETA 70m
+    ep 2 step 14500/26290  loss 2.5879  lr 9.14e-05  2.82 it/s  ETA 70m
+    ep 2 step 14600/26290  loss 2.5638  lr 9.07e-05  2.82 it/s  ETA 69m
+    ep 2 step 14700/26290  loss 2.6139  lr 8.99e-05  2.82 it/s  ETA 68m
+    ep 2 step 14800/26290  loss 2.6148  lr 8.91e-05  2.82 it/s  ETA 68m
+    ep 2 step 14900/26290  loss 2.5938  lr 8.83e-05  2.82 it/s  ETA 67m
+    ep 2 step 15000/26290  loss 2.6236  lr 8.76e-05  2.82 it/s  ETA 67m
+    ep 2 step 15100/26290  loss 2.6000  lr 8.68e-05  2.82 it/s  ETA 66m
+    ep 2 step 15200/26290  loss 2.5687  lr 8.60e-05  2.82 it/s  ETA 65m
+    ep 2 step 15300/26290  loss 2.5807  lr 8.52e-05  2.83 it/s  ETA 65m
+    ep 2 step 15400/26290  loss 2.5607  lr 8.45e-05  2.83 it/s  ETA 64m
+    ep 2 step 15500/26290  loss 2.6155  lr 8.37e-05  2.83 it/s  ETA 64m
+    ep 2 step 15600/26290  loss 2.5731  lr 8.29e-05  2.83 it/s  ETA 63m
+    ep 2 step 15700/26290  loss 2.5746  lr 8.21e-05  2.83 it/s  ETA 62m
+    [ep 2] val loss 1.1513  ppl 3.162  train 1.0958  gap +0.0555  (113s)  <- tot nhat
+    ep 3 step 15800/26290  loss 2.6161  lr 8.13e-05  2.77 it/s  ETA 63m
+    ep 3 step 15900/26290  loss 2.5783  lr 8.06e-05  2.77 it/s  ETA 62m
+    ep 3 step 16000/26290  loss 2.5554  lr 7.98e-05  2.78 it/s  ETA 62m
+    ep 3 step 16100/26290  loss 2.6065  lr 7.90e-05  2.78 it/s  ETA 61m
+    ep 3 step 16200/26290  loss 2.5695  lr 7.82e-05  2.78 it/s  ETA 61m
+    ep 3 step 16300/26290  loss 2.5660  lr 7.75e-05  2.78 it/s  ETA 60m
+    ep 3 step 16400/26290  loss 2.5513  lr 7.67e-05  2.78 it/s  ETA 59m
+    ep 3 step 16500/26290  loss 2.5998  lr 7.59e-05  2.78 it/s  ETA 59m
+    ep 3 step 16600/26290  loss 2.5838  lr 7.51e-05  2.78 it/s  ETA 58m
+    ep 3 step 16700/26290  loss 2.5898  lr 7.44e-05  2.78 it/s  ETA 57m
+    ep 3 step 16800/26290  loss 2.5850  lr 7.36e-05  2.78 it/s  ETA 57m
+    ep 3 step 16900/26290  loss 2.5914  lr 7.28e-05  2.78 it/s  ETA 56m
+    ep 3 step 17000/26290  loss 2.5886  lr 7.20e-05  2.79 it/s  ETA 56m
+    ep 3 step 17100/26290  loss 2.6037  lr 7.13e-05  2.79 it/s  ETA 55m
+    ep 3 step 17200/26290  loss 2.5560  lr 7.05e-05  2.79 it/s  ETA 54m
+    ep 3 step 17300/26290  loss 2.5969  lr 6.97e-05  2.79 it/s  ETA 54m
+    ep 3 step 17400/26290  loss 2.5524  lr 6.89e-05  2.79 it/s  ETA 53m
+    ep 3 step 17500/26290  loss 2.5644  lr 6.82e-05  2.79 it/s  ETA 53m
+    ep 3 step 17600/26290  loss 2.5872  lr 6.74e-05  2.79 it/s  ETA 52m
+    ep 3 step 17700/26290  loss 2.5781  lr 6.66e-05  2.79 it/s  ETA 51m
+    ep 3 step 17800/26290  loss 2.5839  lr 6.58e-05  2.79 it/s  ETA 51m
+    ep 3 step 17900/26290  loss 2.5915  lr 6.51e-05  2.79 it/s  ETA 50m
+    ep 3 step 18000/26290  loss 2.5790  lr 6.43e-05  2.79 it/s  ETA 49m
+    ep 3 step 18100/26290  loss 2.6086  lr 6.35e-05  2.80 it/s  ETA 49m
+    ep 3 step 18200/26290  loss 2.5771  lr 6.27e-05  2.80 it/s  ETA 48m
+    ep 3 step 18300/26290  loss 2.5766  lr 6.20e-05  2.80 it/s  ETA 48m
+    ep 3 step 18400/26290  loss 2.6015  lr 6.12e-05  2.80 it/s  ETA 47m
+    ep 3 step 18500/26290  loss 2.5603  lr 6.04e-05  2.80 it/s  ETA 46m
+    ep 3 step 18600/26290  loss 2.5957  lr 5.96e-05  2.80 it/s  ETA 46m
+    ep 3 step 18700/26290  loss 2.5600  lr 5.89e-05  2.80 it/s  ETA 45m
+    ep 3 step 18800/26290  loss 2.5768  lr 5.81e-05  2.80 it/s  ETA 45m
+    ep 3 step 18900/26290  loss 2.6025  lr 5.73e-05  2.80 it/s  ETA 44m
+    ep 3 step 19000/26290  loss 2.5962  lr 5.65e-05  2.80 it/s  ETA 43m
+    ep 3 step 19100/26290  loss 2.5562  lr 5.58e-05  2.80 it/s  ETA 43m
+    ep 3 step 19200/26290  loss 2.5786  lr 5.50e-05  2.80 it/s  ETA 42m
+    ep 3 step 19300/26290  loss 2.5817  lr 5.42e-05  2.80 it/s  ETA 42m
+    ep 3 step 19400/26290  loss 2.5735  lr 5.34e-05  2.81 it/s  ETA 41m
+    ep 3 step 19500/26290  loss 2.5825  lr 5.27e-05  2.81 it/s  ETA 40m
+    ep 3 step 19600/26290  loss 2.5511  lr 5.19e-05  2.81 it/s  ETA 40m
+    ep 3 step 19700/26290  loss 2.6097  lr 5.11e-05  2.81 it/s  ETA 39m
+    ep 3 step 19800/26290  loss 2.6024  lr 5.03e-05  2.81 it/s  ETA 39m
+    ep 3 step 19900/26290  loss 2.5624  lr 4.96e-05  2.81 it/s  ETA 38m
+    ep 3 step 20000/26290  loss 2.5754  lr 4.88e-05  2.81 it/s  ETA 37m
+    ep 3 step 20100/26290  loss 2.5509  lr 4.80e-05  2.81 it/s  ETA 37m
+    ep 3 step 20200/26290  loss 2.5610  lr 4.72e-05  2.81 it/s  ETA 36m
+    ep 3 step 20300/26290  loss 2.5755  lr 4.65e-05  2.81 it/s  ETA 36m
+    ep 3 step 20400/26290  loss 2.5364  lr 4.57e-05  2.81 it/s  ETA 35m
+    ep 3 step 20500/26290  loss 2.5772  lr 4.49e-05  2.81 it/s  ETA 34m
+    ep 3 step 20600/26290  loss 2.5726  lr 4.41e-05  2.81 it/s  ETA 34m
+    ep 3 step 20700/26290  loss 2.5690  lr 4.34e-05  2.81 it/s  ETA 33m
+    ep 3 step 20800/26290  loss 2.5777  lr 4.26e-05  2.82 it/s  ETA 32m
+    ep 3 step 20900/26290  loss 2.5834  lr 4.18e-05  2.82 it/s  ETA 32m
+    ep 3 step 21000/26290  loss 2.5610  lr 4.10e-05  2.82 it/s  ETA 31m
+    [ep 3] val loss 1.1499  ppl 3.158  train 1.0938  gap +0.0561  (113s)  <- tot nhat
+    ep 4 step 21100/26290  loss 2.5510  lr 4.02e-05  2.78 it/s  ETA 31m
+    ep 4 step 21200/26290  loss 2.5653  lr 3.95e-05  2.78 it/s  ETA 31m
+    ep 4 step 21300/26290  loss 2.5554  lr 3.87e-05  2.78 it/s  ETA 30m
+    ep 4 step 21400/26290  loss 2.5993  lr 3.79e-05  2.78 it/s  ETA 29m
+    ep 4 step 21500/26290  loss 2.5613  lr 3.71e-05  2.78 it/s  ETA 29m
+    ep 4 step 21600/26290  loss 2.5773  lr 3.64e-05  2.78 it/s  ETA 28m
+    ep 4 step 21700/26290  loss 2.5799  lr 3.56e-05  2.78 it/s  ETA 28m
+    ep 4 step 21800/26290  loss 2.5646  lr 3.48e-05  2.78 it/s  ETA 27m
+    ep 4 step 21900/26290  loss 2.5861  lr 3.40e-05  2.78 it/s  ETA 26m
+    ep 4 step 22000/26290  loss 2.5614  lr 3.33e-05  2.78 it/s  ETA 26m
+    ep 4 step 22100/26290  loss 2.5276  lr 3.25e-05  2.78 it/s  ETA 25m
+    ep 4 step 22200/26290  loss 2.5307  lr 3.17e-05  2.78 it/s  ETA 24m
+    ep 4 step 22300/26290  loss 2.5818  lr 3.09e-05  2.78 it/s  ETA 24m
+    ep 4 step 22400/26290  loss 2.5754  lr 3.02e-05  2.79 it/s  ETA 23m
+    ep 4 step 22500/26290  loss 2.5597  lr 2.94e-05  2.79 it/s  ETA 23m
+    ep 4 step 22600/26290  loss 2.5906  lr 2.86e-05  2.79 it/s  ETA 22m
+    ep 4 step 22700/26290  loss 2.5643  lr 2.78e-05  2.79 it/s  ETA 21m
+    ep 4 step 22800/26290  loss 2.5485  lr 2.71e-05  2.79 it/s  ETA 21m
+    ep 4 step 22900/26290  loss 2.5683  lr 2.63e-05  2.79 it/s  ETA 20m
+    ep 4 step 23000/26290  loss 2.5592  lr 2.55e-05  2.79 it/s  ETA 20m
+    ep 4 step 23100/26290  loss 2.5534  lr 2.47e-05  2.79 it/s  ETA 19m
+    ep 4 step 23200/26290  loss 2.5525  lr 2.40e-05  2.79 it/s  ETA 18m
+    ep 4 step 23300/26290  loss 2.5713  lr 2.32e-05  2.79 it/s  ETA 18m
+    ep 4 step 23400/26290  loss 2.5711  lr 2.24e-05  2.79 it/s  ETA 17m
+    ep 4 step 23500/26290  loss 2.5693  lr 2.16e-05  2.79 it/s  ETA 17m
+    ep 4 step 23600/26290  loss 2.5930  lr 2.09e-05  2.80 it/s  ETA 16m
+    ep 4 step 23700/26290  loss 2.5600  lr 2.01e-05  2.80 it/s  ETA 15m
+    ep 4 step 23800/26290  loss 2.5579  lr 1.93e-05  2.80 it/s  ETA 15m
+    ep 4 step 23900/26290  loss 2.5732  lr 1.85e-05  2.80 it/s  ETA 14m
+    ep 4 step 24000/26290  loss 2.5773  lr 1.78e-05  2.80 it/s  ETA 14m
+    ep 4 step 24100/26290  loss 2.5757  lr 1.70e-05  2.80 it/s  ETA 13m
+    ep 4 step 24200/26290  loss 2.5445  lr 1.62e-05  2.80 it/s  ETA 12m
+    ep 4 step 24300/26290  loss 2.5367  lr 1.54e-05  2.80 it/s  ETA 12m
+    ep 4 step 24400/26290  loss 2.5465  lr 1.47e-05  2.80 it/s  ETA 11m
+    ep 4 step 24500/26290  loss 2.5703  lr 1.39e-05  2.80 it/s  ETA 11m
+    ep 4 step 24600/26290  loss 2.5861  lr 1.31e-05  2.80 it/s  ETA 10m
+    ep 4 step 24700/26290  loss 2.5586  lr 1.23e-05  2.80 it/s  ETA 9m
+    ep 4 step 24800/26290  loss 2.5560  lr 1.16e-05  2.80 it/s  ETA 9m
+    ep 4 step 24900/26290  loss 2.5714  lr 1.08e-05  2.80 it/s  ETA 8m
+    ep 4 step 25000/26290  loss 2.5761  lr 1.00e-05  2.80 it/s  ETA 8m
+    ep 4 step 25100/26290  loss 2.5720  lr 9.23e-06  2.80 it/s  ETA 7m
+    ep 4 step 25200/26290  loss 2.5770  lr 8.45e-06  2.81 it/s  ETA 6m
+    ep 4 step 25300/26290  loss 2.5599  lr 7.68e-06  2.81 it/s  ETA 6m
+    ep 4 step 25400/26290  loss 2.5534  lr 6.90e-06  2.81 it/s  ETA 5m
+    ep 4 step 25500/26290  loss 2.5629  lr 6.13e-06  2.81 it/s  ETA 5m
+    ep 4 step 25600/26290  loss 2.5772  lr 5.35e-06  2.81 it/s  ETA 4m
+    ep 4 step 25700/26290  loss 2.5714  lr 4.58e-06  2.81 it/s  ETA 4m
+    ep 4 step 25800/26290  loss 2.5781  lr 3.80e-06  2.81 it/s  ETA 3m
+    ep 4 step 25900/26290  loss 2.6019  lr 3.02e-06  2.81 it/s  ETA 2m
+    ep 4 step 26000/26290  loss 2.5718  lr 2.25e-06  2.81 it/s  ETA 2m
+    ep 4 step 26100/26290  loss 2.5793  lr 1.47e-06  2.81 it/s  ETA 1m
+    ep 4 step 26200/26290  loss 2.5461  lr 6.98e-07  2.81 it/s  ETA 1m
+    [ep 4] val loss 1.1442  ppl 3.140  train 1.0855  gap +0.0587  (113s)  <- tot nhat
+    luu runs_e2e/dora_r4_na_s0_last.pt  (1.6 MB)
+    luu runs_e2e/dora_r4_na_s0_best.pt  (epoch 4, val 1.1442)
+      sinh 16/630  (5s)
+      sinh 336/630  (134s)
+
+    [dora_r4_na_s0]  BLEU-4 = 64.75   ROUGE-L = 67.23   (630 cau)
+    vi du: Blue Spice is a coffee shop in the city centre.
+    sinh 630 cau trong 258s (2.44 cau/s, 61 tu/s)
+
+  do tre (batch 8 x seq 128):
+    forward           339.14 ms  (3.0 k token/s)
+    forward+bwd       634.57 ms  (1.6 k token/s)
+    forward da gop    337.66 ms   -> chua gop cham hon +0.4 %
+
+  ket qua -> runs_e2e/dora_r4_na_s0.json  (va them dong vao summary.jsonl)
+  cham diem chinh thuc:  python measure_scores.py runs_e2e/dora_r4_na_s0_refs.txt runs_e2e/dora_r4_na_s0_hyps.txt

@@ -42,6 +42,8 @@ Qwen2.5-1.5B, adapting `k_proj` + `v_proj` only (28 layers, `a = 6`), E2E NLG,
 | LoRA      |    4 |   0.401 M |  64.98 | 0.70 |     3 |
 | LoRA      |    8 |   0.803 M |  65.61 | 0.07 |     3 |
 | LoRA      |   16 |   1.606 M |  65.75 | 0.06 |     2 |
+| DoRA      |    4 |   0.416 M |  64.75 |    — |     1 |
+| PiSSA     |    4 |   0.401 M |  64.33 |    — |     1 |
 | VeRA      |  768 |   0.057 M |  65.03 | 1.18 |     2 |
 | target-ft |    — |  22.034 M |  64.26 |    — |     1 |
 | zero-shot |    — |         0 |  33.12 |    — |     1 |
@@ -212,6 +214,53 @@ matrix. Fewer trainable parameters does not mean less compute.
 Note that LoRA and S-LoRA have never had their learning rate swept; both use 2e-4 borrowed
 from the LoRA paper. The current comparison therefore favours VeRA.
 
+### DoRA and PiSSA as baselines
+
+Both at r=4, which is LoRA r=4's budget: PiSSA matches it exactly, DoRA adds one magnitude
+per output row (+3.6% on Qwen, +4.5% on Gemma). The recipe is unchanged from the LoRA row
+it is compared with, lr 2e-4 included. DoRA follows §4.3 of its paper (column norm
+detached, magnitude initialised to ‖W₀‖); PiSSA takes the top-r SVD of `W₀` in float64 and
+trains on the residual base, with α=r. Weight decay is off for DoRA's magnitude and for
+PiSSA's A and B, since all three start away from zero. One seed each.
+
+**E2E, Qwen2.5-1.5B** (float32, same setup as the table at the top)
+
+| Config | Params | BLEU-4 | ROUGE-L | val loss | seeds |
+|--------|-------:|-------:|--------:|---------:|------:|
+| LoRA r=4 | 0.401 M | 64.98 ± 0.70 | — | — | 3 |
+| DoRA r=4 | 0.416 M | 64.75 | 67.23 | 1.1442 | 1 |
+| PiSSA r=4 | 0.401 M | 64.33 | 66.28 | 1.1556 | 1 |
+| **S-LoRA r=16** | 0.459 M | **65.70** ± 0.38 | — | — | 2 |
+
+**DART, Gemma 3 1B** (bfloat16, same setup as the Gemma table above)
+
+| Config | Params | BLEU-4 | ROUGE-L | val loss | train loss |
+|--------|-------:|-------:|--------:|---------:|-----------:|
+| LoRA r=4 | 0.293 M | 32.32 | 52.91 | 1.2236 | 1.1717 |
+| DoRA r=4 | 0.306 M | 32.33 | 52.82 | 1.2179 | 1.1471 |
+| PiSSA r=4 | 0.293 M | 28.69 | 51.19 | 1.3361 | 1.3602 |
+| **S-LoRA r=11** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
+
+**Neither improves on LoRA at this budget.** On E2E both sit inside LoRA's spread, and
+S-LoRA r=4 (65.53 on 0.115 M) is above both on 28% of their parameters. On DART DoRA ties
+LoRA to 0.01 BLEU, and S-LoRA r=11 leads both by 2.7.
+
+**The DART PiSSA number is not a fair one.** It underfits rather than overfits — train loss
+sits above val loss, and the level is set in the first epoch and barely moves after — yet
+the same code on E2E in float32 trails DoRA by only 0.4. Two suspects, not yet separated:
+
+- **bfloat16 adapter weights.** PiSSA's A and B start at `√S`, not zero. At a step of 1e-4,
+  48–62% of their entries are rounded away in bfloat16 and cannot move. LoRA's B starts at
+  zero and is immune. PiSSA's own paper keeps the adapter in float32 (quoted above).
+- **The learning rate.** 2e-4 is LoRA's; PiSSA's paper uses 2e-5. In a short trial the
+  val loss rose from 2.96 to 3.62 when warmup was cut to 5 steps.
+
+One run at float32 and one at 2e-5 would tell them apart.
+
+The DART rows here ran on A10s, and the LoRA and S-LoRA rows on a different machine. At 4B
+a change of stack moved BLEU by about 0.7, so the DoRA–LoRA tie is inside that margin.
+Both methods fold back into `W` after training, so inference cost is LoRA's.
+
 ### Sensitivity to the learning rate
 
 Why the 4B learning-rate table above looks the way it does. Training the square factor is
@@ -264,7 +313,8 @@ python summarize.py runs/summary.jsonl
 ```
 
 Methods: `rowspace` (S-LoRA), `rowspace-full` (train the square factor directly, no LoRA),
-`lora`, `vera`, `target-ft` (unconstrained upper bound), `full`, `none` (zero-shot floor).
+`lora`, `dora`, `pissa`, `vera`, `target-ft` (unconstrained upper bound), `full`, `none`
+(zero-shot floor).
 
 Compare at **matched parameter budget**, not matched rank — at equal rank LoRA receives
 about 3.5× more parameters on these matrices, which makes the comparison meaningless.

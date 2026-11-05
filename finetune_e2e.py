@@ -42,9 +42,9 @@ import time
 import torch
 import torch.nn as nn
 
-from peft_generic import (TARGETS, LoRAConv1D, LoRALinear, apply_hybrid,
-                          apply_lora, apply_vera, convert_rowspace, merge_all,
-                          param_counts)
+from peft_generic import (TARGETS, LoRAConv1D, LoRALinear, apply_dora, apply_hybrid,
+                          apply_lora, apply_pissa, apply_vera, convert_rowspace,
+                          merge_all, param_counts)
 from rowspace_peft import NONSQUARE, RowSpaceLinear
 
 PARQUET = "hf://datasets/tuetschek/e2e_nlg@refs%2Fconvert%2Fparquet/default"
@@ -464,7 +464,15 @@ def load_resume(path, model, opt, sched, device):
 
 def train(model, data, val_data, tok, a, pairs=None):
     tp = [p for p in model.parameters() if p.requires_grad]
-    opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
+    # _no_decay: tham so khong khoi tao o 0 (m cua DoRA, A/B cua PiSSA). Weight
+    # decay keo chung ve 0 tuc la keo model ra xa W0. Cac method khac khong co co
+    # nay nen van mot nhom nhu cu.
+    nd = [p for p in tp if getattr(p, "_no_decay", False)]
+    groups = [dict(params=[p for p in tp if not getattr(p, "_no_decay", False)],
+                   weight_decay=a.weight_decay)]
+    if nd:
+        groups.append(dict(params=nd, weight_decay=0.0))
+    opt = torch.optim.AdamW(groups, lr=a.lr)
     _accum = max(1, getattr(a, 'accum', 1))
     steps = math.ceil(math.ceil(len(data) / a.batch) / _accum) * a.epochs
     warm = (int(a.warmup_ratio * steps) if getattr(a, 'warmup_ratio', 0)
@@ -732,6 +740,10 @@ def build_model(a):
                    a.rank_square, a.alpha_square)
     elif a.method == "vera":
         apply_vera(model, a.targets, a.rank, seed=a.seed, d_init=a.vera_d_init)
+    elif a.method == "dora":
+        apply_dora(model, a.targets, a.rank, a.alpha)
+    elif a.method == "pissa":
+        apply_pissa(model, a.targets, a.rank, a.alpha)
     elif a.method == "hybrid":
         # S-LoRA cho ma tran khong vuong, LoRA cho ma tran vuong (q_proj, o_proj)
         print(f"  hybrid: S-LoRA r={a.rank} + LoRA r={a.rank_square} tren ma tran vuong",
@@ -784,7 +796,7 @@ def main():
     p = argparse.ArgumentParser(description="Fine-tune GPT-2 tren E2E NLG")
     p.add_argument("--method", required=True,
                    choices=["rowspace", "rowspace-full", "lora", "vera", "hybrid",
-                            "target-ft",
+                            "dora", "pissa", "target-ft",
                             "full", "none"])
     p.add_argument("--model", default="gpt2-medium")
     p.add_argument("--dataset", choices=["e2e", "dart"], default="e2e",
@@ -1028,7 +1040,7 @@ def main():
     if not a.no_bench:
         print(f"\n  do tre (batch {a.bench_batch} x seq {a.bench_seq}):")
         res["bench"] = bench_model(model, a)
-        if a.method in ("rowspace", "lora"):
+        if a.method in ("rowspace", "lora", "dora", "pissa"):
             merge_all(model, a.targets)      # eval xong roi nen khong anh huong ket qua
             res["bench"].update(bench_model(model, a, prefix="merged_"))
         b = res["bench"]

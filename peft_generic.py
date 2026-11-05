@@ -25,8 +25,10 @@ from slora.adapters import (                           # noqa: F401
 )
 from slora.surgery import (                            # noqa: F401
     TARGETS,
+    apply_dora,
     apply_hybrid,
     apply_lora,
+    apply_pissa,
     apply_vera,
     conv1d_weight,
     convert_rowspace,

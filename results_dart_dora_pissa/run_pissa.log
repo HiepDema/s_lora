@@ -1,0 +1,314 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+=== pissa_r4_na_s0 ===
+model=unsloth/gemma-3-1b-pt  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+  nap E2E NLG...
+  train 62658 vi du | val 6980 | test 1500 MR duy nhat
+Loading weights:   0%|          | 0/340 [00:00<?, ?it/s]Loading weights: 100%|██████████| 340/340 [00:00<00:00, 8825.03it/s]
+  model dtype: bf16 (nguong kiem phan ra noi thanh 3e-02)
+
+  TRAIN DUOC: 0.293 M (0.029 % cua 1000.18 M)   [dung model + phan ra: 2.1s]
+
+  train: 62658 vi du, 23499 buoc, lr=0.0002 (linear), batch=8
+    ep 0 step 100/23499  loss 5.0985  lr 4.00e-05  7.83 it/s  ETA 50m
+    ep 0 step 200/23499  loss 4.7030  lr 8.00e-05  7.95 it/s  ETA 49m
+    ep 0 step 300/23499  loss 4.1221  lr 1.20e-04  8.13 it/s  ETA 48m
+    ep 0 step 400/23499  loss 3.7420  lr 1.60e-04  8.24 it/s  ETA 47m
+    ep 0 step 500/23499  loss 3.4861  lr 2.00e-04  8.35 it/s  ETA 46m
+    ep 0 step 600/23499  loss 3.3189  lr 1.99e-04  8.38 it/s  ETA 46m
+    ep 0 step 700/23499  loss 3.2070  lr 1.98e-04  8.36 it/s  ETA 45m
+    ep 0 step 800/23499  loss 3.1856  lr 1.97e-04  8.41 it/s  ETA 45m
+    ep 0 step 900/23499  loss 3.1173  lr 1.97e-04  8.40 it/s  ETA 45m
+    ep 0 step 1000/23499  loss 3.1132  lr 1.96e-04  8.38 it/s  ETA 45m
+    ep 0 step 1100/23499  loss 3.0930  lr 1.95e-04  8.40 it/s  ETA 44m
+    ep 0 step 1200/23499  loss 3.0949  lr 1.94e-04  8.38 it/s  ETA 44m
+    ep 0 step 1300/23499  loss 3.0652  lr 1.93e-04  8.39 it/s  ETA 44m
+    ep 0 step 1400/23499  loss 3.0184  lr 1.92e-04  8.38 it/s  ETA 44m
+    ep 0 step 1500/23499  loss 3.0452  lr 1.91e-04  8.38 it/s  ETA 44m
+    ep 0 step 1600/23499  loss 3.0321  lr 1.90e-04  8.40 it/s  ETA 43m
+    ep 0 step 1700/23499  loss 3.0176  lr 1.90e-04  8.40 it/s  ETA 43m
+    ep 0 step 1800/23499  loss 2.9962  lr 1.89e-04  8.40 it/s  ETA 43m
+    ep 0 step 1900/23499  loss 3.0187  lr 1.88e-04  8.40 it/s  ETA 43m
+    ep 0 step 2000/23499  loss 3.0167  lr 1.87e-04  8.41 it/s  ETA 43m
+    ep 0 step 2100/23499  loss 3.0105  lr 1.86e-04  8.41 it/s  ETA 42m
+    ep 0 step 2200/23499  loss 2.9990  lr 1.85e-04  8.40 it/s  ETA 42m
+    ep 0 step 2300/23499  loss 2.9836  lr 1.84e-04  8.40 it/s  ETA 42m
+    ep 0 step 2400/23499  loss 3.0191  lr 1.83e-04  8.41 it/s  ETA 42m
+    ep 0 step 2500/23499  loss 3.0244  lr 1.83e-04  8.42 it/s  ETA 42m
+    ep 0 step 2600/23499  loss 2.9589  lr 1.82e-04  8.41 it/s  ETA 41m
+    ep 0 step 2700/23499  loss 2.9667  lr 1.81e-04  8.41 it/s  ETA 41m
+    ep 0 step 2800/23499  loss 2.9793  lr 1.80e-04  8.41 it/s  ETA 41m
+    ep 0 step 2900/23499  loss 2.9792  lr 1.79e-04  8.41 it/s  ETA 41m
+    ep 0 step 3000/23499  loss 2.9526  lr 1.78e-04  8.41 it/s  ETA 41m
+    ep 0 step 3100/23499  loss 2.9844  lr 1.77e-04  8.42 it/s  ETA 40m
+    ep 0 step 3200/23499  loss 2.9570  lr 1.77e-04  8.41 it/s  ETA 40m
+    ep 0 step 3300/23499  loss 2.9959  lr 1.76e-04  8.41 it/s  ETA 40m
+    ep 0 step 3400/23499  loss 3.0068  lr 1.75e-04  8.41 it/s  ETA 40m
+    ep 0 step 3500/23499  loss 2.9771  lr 1.74e-04  8.40 it/s  ETA 40m
+    ep 0 step 3600/23499  loss 2.9611  lr 1.73e-04  8.41 it/s  ETA 39m
+    ep 0 step 3700/23499  loss 2.9837  lr 1.72e-04  8.41 it/s  ETA 39m
+    ep 0 step 3800/23499  loss 3.0160  lr 1.71e-04  8.41 it/s  ETA 39m
+    ep 0 step 3900/23499  loss 3.0009  lr 1.70e-04  8.40 it/s  ETA 39m
+    ep 0 step 4000/23499  loss 3.0119  lr 1.70e-04  8.41 it/s  ETA 39m
+    ep 0 step 4100/23499  loss 2.9681  lr 1.69e-04  8.41 it/s  ETA 38m
+    ep 0 step 4200/23499  loss 2.9739  lr 1.68e-04  8.40 it/s  ETA 38m
+    ep 0 step 4300/23499  loss 2.9824  lr 1.67e-04  8.40 it/s  ETA 38m
+    ep 0 step 4400/23499  loss 2.9473  lr 1.66e-04  8.41 it/s  ETA 38m
+    ep 0 step 4500/23499  loss 2.9737  lr 1.65e-04  8.41 it/s  ETA 38m
+    ep 0 step 4600/23499  loss 2.9855  lr 1.64e-04  8.41 it/s  ETA 37m
+    ep 0 step 4700/23499  loss 2.9718  lr 1.63e-04  8.41 it/s  ETA 37m
+    ep 0 step 4800/23499  loss 2.9532  lr 1.63e-04  8.41 it/s  ETA 37m
+    ep 0 step 4900/23499  loss 2.9351  lr 1.62e-04  8.41 it/s  ETA 37m
+    ep 0 step 5000/23499  loss 2.9388  lr 1.61e-04  8.40 it/s  ETA 37m
+    ep 0 step 5100/23499  loss 2.9572  lr 1.60e-04  8.39 it/s  ETA 37m
+    ep 0 step 5200/23499  loss 2.9660  lr 1.59e-04  8.38 it/s  ETA 36m
+    ep 0 step 5300/23499  loss 2.9346  lr 1.58e-04  8.37 it/s  ETA 36m
+    ep 0 step 5400/23499  loss 2.9075  lr 1.57e-04  8.35 it/s  ETA 36m
+    ep 0 step 5500/23499  loss 2.9336  lr 1.57e-04  8.34 it/s  ETA 36m
+    ep 0 step 5600/23499  loss 2.9467  lr 1.56e-04  8.33 it/s  ETA 36m
+    ep 0 step 5700/23499  loss 2.9582  lr 1.55e-04  8.32 it/s  ETA 36m
+    ep 0 step 5800/23499  loss 2.9797  lr 1.54e-04  8.31 it/s  ETA 35m
+    ep 0 step 5900/23499  loss 2.9492  lr 1.53e-04  8.31 it/s  ETA 35m
+    ep 0 step 6000/23499  loss 2.9342  lr 1.52e-04  8.31 it/s  ETA 35m
+    ep 0 step 6100/23499  loss 2.9057  lr 1.51e-04  8.30 it/s  ETA 35m
+    ep 0 step 6200/23499  loss 2.9596  lr 1.50e-04  8.31 it/s  ETA 35m
+    ep 0 step 6300/23499  loss 2.9893  lr 1.50e-04  8.31 it/s  ETA 34m
+    ep 0 step 6400/23499  loss 2.9423  lr 1.49e-04  8.31 it/s  ETA 34m
+    ep 0 step 6500/23499  loss 2.9430  lr 1.48e-04  8.31 it/s  ETA 34m
+    ep 0 step 6600/23499  loss 2.9251  lr 1.47e-04  8.31 it/s  ETA 34m
+    ep 0 step 6700/23499  loss 2.9400  lr 1.46e-04  8.31 it/s  ETA 34m
+    ep 0 step 6800/23499  loss 2.9399  lr 1.45e-04  8.31 it/s  ETA 34m
+    ep 0 step 6900/23499  loss 2.9572  lr 1.44e-04  8.31 it/s  ETA 33m
+    ep 0 step 7000/23499  loss 2.9367  lr 1.43e-04  8.31 it/s  ETA 33m
+    ep 0 step 7100/23499  loss 2.9594  lr 1.43e-04  8.30 it/s  ETA 33m
+    ep 0 step 7200/23499  loss 2.9409  lr 1.42e-04  8.30 it/s  ETA 33m
+    ep 0 step 7300/23499  loss 2.9424  lr 1.41e-04  8.30 it/s  ETA 33m
+    ep 0 step 7400/23499  loss 2.9639  lr 1.40e-04  8.30 it/s  ETA 32m
+    ep 0 step 7500/23499  loss 2.9298  lr 1.39e-04  8.30 it/s  ETA 32m
+    ep 0 step 7600/23499  loss 2.9307  lr 1.38e-04  8.30 it/s  ETA 32m
+    ep 0 step 7700/23499  loss 2.9378  lr 1.37e-04  8.29 it/s  ETA 32m
+    ep 0 step 7800/23499  loss 2.9466  lr 1.37e-04  8.30 it/s  ETA 32m
+    [ep 0] val loss 1.3402  ppl 3.820  train 1.3700  gap -0.0299  (36s)  <- tot nhat
+    ep 1 step 7900/23499  loss 2.9796  lr 1.36e-04  8.00 it/s  ETA 33m
+    ep 1 step 8000/23499  loss 2.9334  lr 1.35e-04  8.00 it/s  ETA 32m
+    ep 1 step 8100/23499  loss 2.9541  lr 1.34e-04  8.01 it/s  ETA 32m
+    ep 1 step 8200/23499  loss 2.9474  lr 1.33e-04  8.01 it/s  ETA 32m
+    ep 1 step 8300/23499  loss 2.9702  lr 1.32e-04  8.01 it/s  ETA 32m
+    ep 1 step 8400/23499  loss 2.9475  lr 1.31e-04  8.01 it/s  ETA 31m
+    ep 1 step 8500/23499  loss 2.9249  lr 1.30e-04  8.02 it/s  ETA 31m
+    ep 1 step 8600/23499  loss 2.9212  lr 1.30e-04  8.02 it/s  ETA 31m
+    ep 1 step 8700/23499  loss 2.9686  lr 1.29e-04  8.03 it/s  ETA 31m
+    ep 1 step 8800/23499  loss 2.9134  lr 1.28e-04  8.03 it/s  ETA 31m
+    ep 1 step 8900/23499  loss 2.9176  lr 1.27e-04  8.03 it/s  ETA 30m
+    ep 1 step 9000/23499  loss 2.9479  lr 1.26e-04  8.04 it/s  ETA 30m
+    ep 1 step 9100/23499  loss 2.9608  lr 1.25e-04  8.04 it/s  ETA 30m
+    ep 1 step 9200/23499  loss 2.9481  lr 1.24e-04  8.05 it/s  ETA 30m
+    ep 1 step 9300/23499  loss 2.9292  lr 1.23e-04  8.05 it/s  ETA 29m
+    ep 1 step 9400/23499  loss 2.9092  lr 1.23e-04  8.05 it/s  ETA 29m
+    ep 1 step 9500/23499  loss 2.9201  lr 1.22e-04  8.05 it/s  ETA 29m
+    ep 1 step 9600/23499  loss 2.9062  lr 1.21e-04  8.05 it/s  ETA 29m
+    ep 1 step 9700/23499  loss 2.8933  lr 1.20e-04  8.05 it/s  ETA 29m
+    ep 1 step 9800/23499  loss 2.9267  lr 1.19e-04  8.05 it/s  ETA 28m
+    ep 1 step 9900/23499  loss 2.9568  lr 1.18e-04  8.06 it/s  ETA 28m
+    ep 1 step 10000/23499  loss 2.9283  lr 1.17e-04  8.06 it/s  ETA 28m
+    ep 1 step 10100/23499  loss 2.9599  lr 1.17e-04  8.07 it/s  ETA 28m
+    ep 1 step 10200/23499  loss 2.9687  lr 1.16e-04  8.07 it/s  ETA 27m
+    ep 1 step 10300/23499  loss 2.9471  lr 1.15e-04  8.07 it/s  ETA 27m
+    ep 1 step 10400/23499  loss 2.9089  lr 1.14e-04  8.07 it/s  ETA 27m
+    ep 1 step 10500/23499  loss 2.9356  lr 1.13e-04  8.07 it/s  ETA 27m
+    ep 1 step 10600/23499  loss 2.9630  lr 1.12e-04  8.07 it/s  ETA 27m
+    ep 1 step 10700/23499  loss 2.9488  lr 1.11e-04  8.07 it/s  ETA 26m
+    ep 1 step 10800/23499  loss 2.9450  lr 1.10e-04  8.08 it/s  ETA 26m
+    ep 1 step 10900/23499  loss 2.9521  lr 1.10e-04  8.08 it/s  ETA 26m
+    ep 1 step 11000/23499  loss 2.9335  lr 1.09e-04  8.08 it/s  ETA 26m
+    ep 1 step 11100/23499  loss 2.9898  lr 1.08e-04  8.09 it/s  ETA 26m
+    ep 1 step 11200/23499  loss 2.9366  lr 1.07e-04  8.09 it/s  ETA 25m
+    ep 1 step 11300/23499  loss 2.9193  lr 1.06e-04  8.09 it/s  ETA 25m
+    ep 1 step 11400/23499  loss 2.9268  lr 1.05e-04  8.10 it/s  ETA 25m
+    ep 1 step 11500/23499  loss 2.9688  lr 1.04e-04  8.10 it/s  ETA 25m
+    ep 1 step 11600/23499  loss 2.9592  lr 1.03e-04  8.10 it/s  ETA 24m
+    ep 1 step 11700/23499  loss 2.9667  lr 1.03e-04  8.10 it/s  ETA 24m
+    ep 1 step 11800/23499  loss 2.9506  lr 1.02e-04  8.11 it/s  ETA 24m
+    ep 1 step 11900/23499  loss 2.9613  lr 1.01e-04  8.11 it/s  ETA 24m
+    ep 1 step 12000/23499  loss 2.9196  lr 1.00e-04  8.11 it/s  ETA 24m
+    ep 1 step 12100/23499  loss 2.9276  lr 9.91e-05  8.11 it/s  ETA 23m
+    ep 1 step 12200/23499  loss 2.9802  lr 9.83e-05  8.12 it/s  ETA 23m
+    ep 1 step 12300/23499  loss 2.9479  lr 9.74e-05  8.12 it/s  ETA 23m
+    ep 1 step 12400/23499  loss 2.9520  lr 9.65e-05  8.12 it/s  ETA 23m
+    ep 1 step 12500/23499  loss 2.9640  lr 9.56e-05  8.13 it/s  ETA 23m
+    ep 1 step 12600/23499  loss 2.9170  lr 9.48e-05  8.13 it/s  ETA 22m
+    ep 1 step 12700/23499  loss 2.9542  lr 9.39e-05  8.13 it/s  ETA 22m
+    ep 1 step 12800/23499  loss 2.9642  lr 9.30e-05  8.13 it/s  ETA 22m
+    ep 1 step 12900/23499  loss 2.9176  lr 9.22e-05  8.14 it/s  ETA 22m
+    ep 1 step 13000/23499  loss 2.9467  lr 9.13e-05  8.14 it/s  ETA 21m
+    ep 1 step 13100/23499  loss 2.9631  lr 9.04e-05  8.14 it/s  ETA 21m
+    ep 1 step 13200/23499  loss 2.9337  lr 8.96e-05  8.14 it/s  ETA 21m
+    ep 1 step 13300/23499  loss 2.9346  lr 8.87e-05  8.15 it/s  ETA 21m
+    ep 1 step 13400/23499  loss 2.9388  lr 8.78e-05  8.15 it/s  ETA 21m
+    ep 1 step 13500/23499  loss 2.9500  lr 8.70e-05  8.15 it/s  ETA 20m
+    ep 1 step 13600/23499  loss 2.9615  lr 8.61e-05  8.15 it/s  ETA 20m
+    ep 1 step 13700/23499  loss 2.9642  lr 8.52e-05  8.16 it/s  ETA 20m
+    ep 1 step 13800/23499  loss 2.9685  lr 8.43e-05  8.16 it/s  ETA 20m
+    ep 1 step 13900/23499  loss 2.9247  lr 8.35e-05  8.16 it/s  ETA 20m
+    ep 1 step 14000/23499  loss 2.9153  lr 8.26e-05  8.16 it/s  ETA 19m
+    ep 1 step 14100/23499  loss 2.9561  lr 8.17e-05  8.16 it/s  ETA 19m
+    ep 1 step 14200/23499  loss 2.9177  lr 8.09e-05  8.16 it/s  ETA 19m
+    ep 1 step 14300/23499  loss 2.9550  lr 8.00e-05  8.16 it/s  ETA 19m
+    ep 1 step 14400/23499  loss 2.9332  lr 7.91e-05  8.16 it/s  ETA 19m
+    ep 1 step 14500/23499  loss 2.9512  lr 7.83e-05  8.17 it/s  ETA 18m
+    ep 1 step 14600/23499  loss 2.9738  lr 7.74e-05  8.17 it/s  ETA 18m
+    ep 1 step 14700/23499  loss 2.9135  lr 7.65e-05  8.17 it/s  ETA 18m
+    ep 1 step 14800/23499  loss 2.9329  lr 7.56e-05  8.17 it/s  ETA 18m
+    ep 1 step 14900/23499  loss 2.9545  lr 7.48e-05  8.18 it/s  ETA 18m
+    ep 1 step 15000/23499  loss 2.9658  lr 7.39e-05  8.18 it/s  ETA 17m
+    ep 1 step 15100/23499  loss 2.9663  lr 7.30e-05  8.18 it/s  ETA 17m
+    ep 1 step 15200/23499  loss 2.9351  lr 7.22e-05  8.18 it/s  ETA 17m
+    ep 1 step 15300/23499  loss 2.9403  lr 7.13e-05  8.19 it/s  ETA 17m
+    ep 1 step 15400/23499  loss 2.9457  lr 7.04e-05  8.19 it/s  ETA 16m
+    ep 1 step 15500/23499  loss 2.8899  lr 6.96e-05  8.19 it/s  ETA 16m
+    ep 1 step 15600/23499  loss 2.9239  lr 6.87e-05  8.19 it/s  ETA 16m
+    [ep 1] val loss 1.3361  ppl 3.804  train 1.3602  gap -0.0241  (33s)  <- tot nhat
+    ep 2 step 15700/23499  loss 2.9339  lr 6.78e-05  8.05 it/s  ETA 16m
+    ep 2 step 15800/23499  loss 2.9397  lr 6.70e-05  8.06 it/s  ETA 16m
+    ep 2 step 15900/23499  loss 2.9384  lr 6.61e-05  8.06 it/s  ETA 16m
+    ep 2 step 16000/23499  loss 2.9981  lr 6.52e-05  8.06 it/s  ETA 16m
+    ep 2 step 16100/23499  loss 2.9277  lr 6.43e-05  8.06 it/s  ETA 15m
+    ep 2 step 16200/23499  loss 2.9225  lr 6.35e-05  8.06 it/s  ETA 15m
+    ep 2 step 16300/23499  loss 2.9286  lr 6.26e-05  8.06 it/s  ETA 15m
+    ep 2 step 16400/23499  loss 2.9062  lr 6.17e-05  8.07 it/s  ETA 15m
+    ep 2 step 16500/23499  loss 2.9505  lr 6.09e-05  8.07 it/s  ETA 14m
+    ep 2 step 16600/23499  loss 3.0004  lr 6.00e-05  8.07 it/s  ETA 14m
+    ep 2 step 16700/23499  loss 2.9719  lr 5.91e-05  8.07 it/s  ETA 14m
+    ep 2 step 16800/23499  loss 2.9145  lr 5.83e-05  8.07 it/s  ETA 14m
+    ep 2 step 16900/23499  loss 2.9313  lr 5.74e-05  8.08 it/s  ETA 14m
+    ep 2 step 17000/23499  loss 2.8912  lr 5.65e-05  8.08 it/s  ETA 13m
+    ep 2 step 17100/23499  loss 2.9640  lr 5.56e-05  8.08 it/s  ETA 13m
+    ep 2 step 17200/23499  loss 2.9279  lr 5.48e-05  8.08 it/s  ETA 13m
+    ep 2 step 17300/23499  loss 2.9245  lr 5.39e-05  8.08 it/s  ETA 13m
+    ep 2 step 17400/23499  loss 2.9253  lr 5.30e-05  8.08 it/s  ETA 13m
+    ep 2 step 17500/23499  loss 2.9221  lr 5.22e-05  8.09 it/s  ETA 12m
+    ep 2 step 17600/23499  loss 2.9308  lr 5.13e-05  8.09 it/s  ETA 12m
+    ep 2 step 17700/23499  loss 2.9427  lr 5.04e-05  8.09 it/s  ETA 12m
+    ep 2 step 17800/23499  loss 2.9431  lr 4.96e-05  8.09 it/s  ETA 12m
+    ep 2 step 17900/23499  loss 2.9447  lr 4.87e-05  8.09 it/s  ETA 12m
+    ep 2 step 18000/23499  loss 2.9405  lr 4.78e-05  8.09 it/s  ETA 11m
+    ep 2 step 18100/23499  loss 2.9371  lr 4.69e-05  8.09 it/s  ETA 11m
+    ep 2 step 18200/23499  loss 2.9104  lr 4.61e-05  8.10 it/s  ETA 11m
+    ep 2 step 18300/23499  loss 2.9478  lr 4.52e-05  8.10 it/s  ETA 11m
+    ep 2 step 18400/23499  loss 2.9544  lr 4.43e-05  8.10 it/s  ETA 10m
+    ep 2 step 18500/23499  loss 2.9432  lr 4.35e-05  8.10 it/s  ETA 10m
+    ep 2 step 18600/23499  loss 2.9412  lr 4.26e-05  8.10 it/s  ETA 10m
+    ep 2 step 18700/23499  loss 2.9455  lr 4.17e-05  8.10 it/s  ETA 10m
+    ep 2 step 18800/23499  loss 2.9546  lr 4.09e-05  8.11 it/s  ETA 10m
+    ep 2 step 18900/23499  loss 2.9310  lr 4.00e-05  8.11 it/s  ETA 9m
+    ep 2 step 19000/23499  loss 2.8974  lr 3.91e-05  8.11 it/s  ETA 9m
+    ep 2 step 19100/23499  loss 2.9714  lr 3.83e-05  8.11 it/s  ETA 9m
+    ep 2 step 19200/23499  loss 2.9489  lr 3.74e-05  8.11 it/s  ETA 9m
+    ep 2 step 19300/23499  loss 2.9129  lr 3.65e-05  8.11 it/s  ETA 9m
+    ep 2 step 19400/23499  loss 2.9519  lr 3.56e-05  8.11 it/s  ETA 8m
+    ep 2 step 19500/23499  loss 2.9181  lr 3.48e-05  8.11 it/s  ETA 8m
+    ep 2 step 19600/23499  loss 2.9137  lr 3.39e-05  8.11 it/s  ETA 8m
+    ep 2 step 19700/23499  loss 2.9507  lr 3.30e-05  8.12 it/s  ETA 8m
+    ep 2 step 19800/23499  loss 2.9331  lr 3.22e-05  8.12 it/s  ETA 8m
+    ep 2 step 19900/23499  loss 2.9771  lr 3.13e-05  8.12 it/s  ETA 7m
+    ep 2 step 20000/23499  loss 2.9490  lr 3.04e-05  8.12 it/s  ETA 7m
+    ep 2 step 20100/23499  loss 2.9436  lr 2.96e-05  8.12 it/s  ETA 7m
+    ep 2 step 20200/23499  loss 2.9330  lr 2.87e-05  8.12 it/s  ETA 7m
+    ep 2 step 20300/23499  loss 2.9446  lr 2.78e-05  8.13 it/s  ETA 7m
+    ep 2 step 20400/23499  loss 2.9165  lr 2.69e-05  8.13 it/s  ETA 6m
+    ep 2 step 20500/23499  loss 2.9415  lr 2.61e-05  8.13 it/s  ETA 6m
+    ep 2 step 20600/23499  loss 2.9399  lr 2.52e-05  8.13 it/s  ETA 6m
+    ep 2 step 20700/23499  loss 2.9271  lr 2.43e-05  8.13 it/s  ETA 6m
+    ep 2 step 20800/23499  loss 2.9024  lr 2.35e-05  8.13 it/s  ETA 6m
+    ep 2 step 20900/23499  loss 2.9566  lr 2.26e-05  8.13 it/s  ETA 5m
+    ep 2 step 21000/23499  loss 2.9437  lr 2.17e-05  8.13 it/s  ETA 5m
+    ep 2 step 21100/23499  loss 2.9286  lr 2.09e-05  8.13 it/s  ETA 5m
+    ep 2 step 21200/23499  loss 2.9370  lr 2.00e-05  8.14 it/s  ETA 5m
+    ep 2 step 21300/23499  loss 2.9466  lr 1.91e-05  8.14 it/s  ETA 5m
+    ep 2 step 21400/23499  loss 2.9406  lr 1.83e-05  8.14 it/s  ETA 4m
+    ep 2 step 21500/23499  loss 2.9069  lr 1.74e-05  8.14 it/s  ETA 4m
+    ep 2 step 21600/23499  loss 2.9648  lr 1.65e-05  8.14 it/s  ETA 4m
+    ep 2 step 21700/23499  loss 2.9398  lr 1.56e-05  8.14 it/s  ETA 4m
+    ep 2 step 21800/23499  loss 2.9398  lr 1.48e-05  8.15 it/s  ETA 3m
+    ep 2 step 21900/23499  loss 2.9415  lr 1.39e-05  8.15 it/s  ETA 3m
+    ep 2 step 22000/23499  loss 2.9612  lr 1.30e-05  8.15 it/s  ETA 3m
+    ep 2 step 22100/23499  loss 2.9096  lr 1.22e-05  8.15 it/s  ETA 3m
+    ep 2 step 22200/23499  loss 2.9422  lr 1.13e-05  8.15 it/s  ETA 3m
+    ep 2 step 22300/23499  loss 2.9185  lr 1.04e-05  8.15 it/s  ETA 2m
+    ep 2 step 22400/23499  loss 2.9611  lr 9.56e-06  8.15 it/s  ETA 2m
+    ep 2 step 22500/23499  loss 2.9808  lr 8.69e-06  8.15 it/s  ETA 2m
+    ep 2 step 22600/23499  loss 2.9321  lr 7.82e-06  8.16 it/s  ETA 2m
+    ep 2 step 22700/23499  loss 2.9700  lr 6.95e-06  8.16 it/s  ETA 2m
+    ep 2 step 22800/23499  loss 2.9186  lr 6.08e-06  8.16 it/s  ETA 1m
+    ep 2 step 22900/23499  loss 2.9545  lr 5.21e-06  8.16 it/s  ETA 1m
+    ep 2 step 23000/23499  loss 2.8858  lr 4.34e-06  8.16 it/s  ETA 1m
+    ep 2 step 23100/23499  loss 2.9442  lr 3.47e-06  8.16 it/s  ETA 1m
+    ep 2 step 23200/23499  loss 2.9318  lr 2.60e-06  8.16 it/s  ETA 1m
+    ep 2 step 23300/23499  loss 2.9253  lr 1.73e-06  8.16 it/s  ETA 0m
+    ep 2 step 23400/23499  loss 2.9194  lr 8.61e-07  8.16 it/s  ETA 0m
+    [ep 2] val loss 1.3363  ppl 3.805  train 1.3605  gap -0.0243  (33s)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    luu runs_dart/pissa_r4_na_s0_last.pt  (0.6 MB)
+    luu runs_dart/pissa_r4_na_s0_best.pt  (epoch 1, val 1.3361)
+    -> khoi phuc epoch 1 (val 1.3361), thay vi epoch cuoi (1.3363)
+      sinh 32/1500  (7s)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      sinh 672/1500  (122s)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+      sinh 1312/1500  (263s)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=64) and `max_length`(=32768) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+    [pissa_r4_na_s0]  BLEU-4 = 28.69   ROUGE-L = 51.19   (1500 cau)
+    vi du: Jeff Daniels plays the title role in the episode The Flight of The Jewels.
+    sinh 1500 cau trong 303s (4.95 cau/s, 64 tu/s)
+
+  do tre (batch 8 x seq 128):
+    forward            58.25 ms  (17.6 k token/s)
+    forward+bwd       159.55 ms  (6.4 k token/s)
+    forward da gop     57.06 ms   -> chua gop cham hon +2.1 %
+
+  ket qua -> runs_dart/pissa_r4_na_s0.json  (va them dong vao summary.jsonl)
+  cham diem chinh thuc:  python measure_scores.py runs_dart/pissa_r4_na_s0_refs.txt runs_dart/pissa_r4_na_s0_hyps.txt

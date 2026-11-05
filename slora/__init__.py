@@ -27,6 +27,7 @@ from slora.factorize import (
     reconstruct_P,
 )
 from slora.adapters import (
+    DoRALinear,
     LoRAConv1D,
     LoRALinear,
     LoRASplitLinear,
@@ -36,13 +37,16 @@ from slora.adapters import (
 )
 from slora.surgery import (
     TARGETS,
+    apply_dora,
     apply_hybrid,
     apply_lora,
+    apply_pissa,
     apply_vera,
     conv1d_weight,
     convert_rowspace,
     get_blocks,
     merge_all,
+    merge_dora,
     merge_lora,
     merge_rowspace,
     merge_vera,

@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 
 from slora.adapters import (
+    DoRALinear,
     LoRAConv1D,
     LoRALinear,
     LoRASplitLinear,
@@ -203,6 +204,46 @@ def apply_lora(model, targets, rank, alpha, rank_square=None, alpha_square=None,
     return model
 
 
+def apply_dora(model, targets, rank, alpha):
+    """DoRA on every target: LoRA direction + trainable per-output magnitude."""
+    for block in get_blocks(model):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            setattr(parent, attr, DoRALinear(getattr(parent, attr), rank, alpha))
+    for p in model.parameters():
+        p.requires_grad_(False)
+    for m in model.modules():
+        if isinstance(m, DoRALinear):
+            for p in (m.down, m.up, m.magnitude):
+                p.requires_grad_(True)
+    return model
+
+
+@torch.no_grad()
+def apply_pissa(model, targets, rank, alpha, dtype=torch.float64):
+    """PiSSA (Meng et al., NeurIPS 2024): LoRA initialised on the top-r singular
+    triplets of W₀, with the base replaced by the residual W₀ − A B.
+
+    Same layer and parameter count as LoRA; only the initial split differs, so
+    the model starts exactly at W₀.  SVD in float64, then cast back.
+    """
+    apply_lora(model, targets, rank, alpha)
+    for m in model.modules():
+        if not isinstance(m, LoRALinear):
+            continue
+        W = m.base.weight.data
+        U, S, Vh = torch.linalg.svd(W.to(dtype).T, full_matrices=False)  # Wᵀ = U S Vh
+        sq = (S[:rank] / m.scale).sqrt()
+        down, up = U[:, :rank] * sq, sq[:, None] * Vh[:rank]
+        m.down.copy_(down.to(W.dtype))
+        m.up.copy_(up.to(W.dtype))
+        W.copy_((W.to(dtype) - m.scale * (down @ up).T).to(W.dtype))
+        # A, B bat dau o thanh phan chinh cua W₀, khong phai 0: weight decay keo
+        # chung ve 0 la keo model ra xa W₀, nen mien decay cho hai tham so nay.
+        m.down._no_decay = m.up._no_decay = True
+    return model
+
+
 # ======================================================= inject: VeRA
 
 def apply_vera(model, targets, rank, seed=0, d_init=0.1):
@@ -360,8 +401,24 @@ def merge_vera(model, targets):
     return model
 
 
+@torch.no_grad()
+def merge_dora(model, targets):
+    """Merge DoRA into base weights — restores original architecture."""
+    for block in get_blocks(model):
+        for name in targets:
+            parent, attr = resolve(block, name)
+            mod = getattr(parent, attr)
+            if not isinstance(mod, DoRALinear):
+                continue
+            w = mod.base.weight.data
+            w.copy_(mod.merged_weight().to(w.dtype))
+            setattr(parent, attr, mod.base)
+    return model
+
+
 def merge_all(model, targets):
     """Merge any adapter type back into original layers."""
+    merge_dora(model, targets)
     merge_rowspace(model, targets)
     merge_vera(model, targets)
     return merge_lora(model, targets)

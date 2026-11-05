@@ -229,6 +229,46 @@ class LoRALinear(nn.Module):
         return self.base(x) + self.scale * ((x @ self.down) @ self.up)
 
 
+class DoRALinear(nn.Module):
+    """DoRA (Liu et al., ICML 2024):  W' = m ⊙ (W₀ + s·ΔW) / ‖W₀ + s·ΔW‖,  ΔW = (A B)ᵀ.
+
+    The norm is per output unit and detached, as DoRA §4.3 recommends and PEFT
+    implements, so it acts as a constant in backprop.  ``magnitude`` starts at
+    ‖W₀‖, so the layer starts exactly at the base model.
+    """
+
+    def __init__(self, lin, rank, alpha):
+        super().__init__()
+        self.base = lin
+        d_in, d_out = lin.in_features, lin.out_features
+        dt, dv = lin.weight.dtype, lin.weight.device
+        self.down = nn.Parameter(torch.empty(d_in, rank, dtype=dt, device=dv))
+        self.up   = nn.Parameter(torch.zeros(rank, d_out, dtype=dt, device=dv))
+        nn.init.kaiming_uniform_(self.down, a=math.sqrt(5))
+        self.scale = alpha / rank
+        self.magnitude = nn.Parameter(lin.weight.detach().norm(dim=1).clone())
+        # weight decay keo ve 0, ma 0 khong phai diem xuat phat cua m (= ‖W₀‖)
+        self.magnitude._no_decay = True
+
+    def _col_norm(self):
+        W = self.base.weight + self.scale * (self.down @ self.up).T
+        return W.norm(dim=1).detach()
+
+    def forward(self, x):
+        g = self.magnitude / self._col_norm()
+        out = (nn.functional.linear(x, self.base.weight)
+               + self.scale * ((x @ self.down) @ self.up)) * g
+        if self.base.bias is not None:
+            out = out + self.base.bias
+        return out
+
+    @torch.no_grad()
+    def merged_weight(self):
+        """[out, in] weight with the adapter folded in, float64."""
+        W = self.base.weight.double() + self.scale * (self.down.double() @ self.up.double()).T
+        return W * (self.magnitude.double() / W.norm(dim=1))[:, None]
+
+
 class LoRASplitLinear(nn.Module):
     """LoRA on a fused projection, one rank-r adapter per equal output chunk.
 
