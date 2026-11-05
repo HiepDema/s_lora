@@ -230,7 +230,8 @@ PiSSA's A and B, since all three start away from zero. One seed each.
 | LoRA r=4 | 0.401 M | 64.98 ± 0.70 | — | — | 3 |
 | DoRA r=4 | 0.416 M | 64.75 | 67.23 | 1.1442 | 1 |
 | PiSSA r=4 | 0.401 M | 64.33 | 66.28 | 1.1556 | 1 |
-| **S-LoRA r=16** | 0.459 M | **65.70** ± 0.38 | — | — | 2 |
+| S-LoRA r=4 (same rank) | 0.115 M | 65.53 ± 0.14 | — | — | 3 |
+| **S-LoRA r=16 (same budget)** | 0.459 M | **65.70** ± 0.38 | — | — | 2 |
 
 **DART, Gemma 3 1B** (bfloat16, same setup as the Gemma table above)
 
@@ -239,11 +240,13 @@ PiSSA's A and B, since all three start away from zero. One seed each.
 | LoRA r=4 | 0.293 M | 32.32 | 52.91 | 1.2236 | 1.1717 |
 | DoRA r=4 | 0.306 M | 32.33 | 52.82 | 1.2179 | 1.1471 |
 | PiSSA r=4 | 0.293 M | 28.69 | 51.19 | 1.3361 | 1.3602 |
-| **S-LoRA r=11** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
+| S-LoRA r=4 (same rank) | 0.106 M | 33.36 | 54.23 | 1.1610 | 1.0547 |
+| **S-LoRA r=11 (same budget)** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
 
-**Neither improves on LoRA at this budget.** On E2E both sit inside LoRA's spread, and
-S-LoRA r=4 (65.53 on 0.115 M) is above both on 28% of their parameters. On DART DoRA ties
-LoRA to 0.01 BLEU, and S-LoRA r=11 leads both by 2.7.
+**Neither improves on LoRA at this budget.** On E2E both sit inside LoRA's spread; on DART
+DoRA ties LoRA to 0.01 BLEU. S-LoRA at the same rank is above both on either task with about
+a third of their parameters (28% on E2E, 35–36% on DART), and at the same budget it leads by
+1.0–1.4 BLEU on E2E and 2.7 on DART.
 
 **The DART PiSSA number is not a fair one.** It underfits rather than overfits — train loss
 sits above val loss, and the level is set in the first epoch and barely moves after — yet
