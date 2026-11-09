@@ -227,11 +227,14 @@ PiSSA's A and B, since all three start away from zero. One seed each.
 
 | Config | Params | BLEU-4 | ROUGE-L | val loss | seeds |
 |--------|-------:|-------:|--------:|---------:|------:|
-| LoRA r=4 | 0.401 M | 64.98 ± 0.70 | — | — | 3 |
+| LoRA r=4 | 0.401 M | 64.98 ± 0.70 | 67.44 ± 0.48 | 1.1452 | 3 |
 | DoRA r=4 | 0.416 M | 64.75 | 67.23 | 1.1442 | 1 |
 | PiSSA r=4 | 0.401 M | 64.33 | 66.28 | 1.1556 | 1 |
-| S-LoRA r=4 (same rank) | 0.115 M | 65.53 ± 0.14 | — | — | 3 |
-| **S-LoRA r=16 (same budget)** | 0.459 M | **65.70** ± 0.38 | — | — | 2 |
+| S-LoRA r=4 (same rank) | 0.115 M | 65.53 ± 0.14 | 67.98 ± 0.20 | 1.1441 | 3 |
+| **S-LoRA r=16 (same budget)** | 0.459 M | **65.70** ± 0.38 | **68.09** ± 0.25 | **1.1273** | 2 |
+
+Rows with several seeds are means, ± is the standard deviation across seeds, and val loss
+is taken at the selected epoch.
 
 **DART, Gemma 3 1B** (bfloat16, same setup as the Gemma table above)
 
@@ -243,7 +246,8 @@ PiSSA's A and B, since all three start away from zero. One seed each.
 | S-LoRA r=4 (same rank) | 0.106 M | 33.36 | 54.23 | 1.1610 | 1.0547 |
 | **S-LoRA r=11 (same budget)** | 0.293 M | **35.00** | **55.71** | 1.1027 | 0.9707 |
 
-**Neither improves on LoRA at this budget.** On E2E both sit inside LoRA's spread; on DART
+**Neither improves on LoRA at this budget.** On E2E both sit inside LoRA's BLEU spread, and
+PiSSA falls below it on ROUGE-L (66.28 against 67.44 ± 0.48); on DART
 DoRA ties LoRA to 0.01 BLEU. S-LoRA at the same rank is above both on either task with about
 a third of their parameters (28% on E2E, 35–36% on DART), and at the same budget it leads by
 1.0–1.4 BLEU on E2E and 2.7 on DART.

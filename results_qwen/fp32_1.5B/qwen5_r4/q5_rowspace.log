@@ -1,0 +1,66 @@
+
+=== rowspace_r4_colperm_s0 ===
+model=Qwen/Qwen2.5-1.5B  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap E2E NLG...
+Generating train split: 0 examples [00:00, ? examples/s]Generating train split: 42061 examples [00:00, 1848223.41 examples/s]
+Generating validation split: 0 examples [00:00, ? examples/s]Generating validation split: 4672 examples [00:00, 1705167.79 examples/s]
+Generating test split: 0 examples [00:00, ? examples/s]Generating test split: 4693 examples [00:00, 1346273.76 examples/s]
+  train 42061 vi du | val 4672 | test 630 MR duy nhat
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:  49%|████▊     | 164/338 [00:00<00:00, 1639.89it/s]Loading weights:  99%|█████████▊| 333/338 [00:00<00:00, 1669.16it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1678.47it/s]
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    7/28 block  (2s)
+    14/28 block  (3s)
+    21/28 block  (5s)
+    28/28 block  (7s)
+
+  TRAIN DUOC: 0.115 M (0.007 % cua 1543.83 M)   [dung model + phan ra: 12.6s]
+
+  train: 42061 vi du, 26290 buoc, lr=0.0002, batch=8
+    ep 0 step 1000/26290  loss 2.6957  lr 1.96e-04  6.39 it/s  ETA 66m
+    ep 0 step 2000/26290  loss 2.6841  lr 1.88e-04  6.24 it/s  ETA 65m
+    ep 0 step 3000/26290  loss 2.6458  lr 1.81e-04  6.20 it/s  ETA 63m
+    ep 0 step 4000/26290  loss 2.6607  lr 1.73e-04  6.19 it/s  ETA 60m
+    ep 0 step 5000/26290  loss 2.6191  lr 1.65e-04  6.18 it/s  ETA 57m
+    [ep 0] val loss 1.1828  ppl 3.264  (43s)  <- tot nhat
+    ep 1 step 6000/26290  loss 2.6692  lr 1.57e-04  5.92 it/s  ETA 57m
+    ep 1 step 7000/26290  loss 2.6403  lr 1.50e-04  5.95 it/s  ETA 54m
+    ep 1 step 8000/26290  loss 2.5987  lr 1.42e-04  5.97 it/s  ETA 51m
+    ep 1 step 9000/26290  loss 2.6187  lr 1.34e-04  5.99 it/s  ETA 48m
+    ep 1 step 10000/26290  loss 2.6152  lr 1.26e-04  6.00 it/s  ETA 45m
+    [ep 1] val loss 1.1585  ppl 3.185  (43s)  <- tot nhat
+    ep 2 step 11000/26290  loss 2.6033  lr 1.19e-04  5.87 it/s  ETA 43m
+    ep 2 step 12000/26290  loss 2.5907  lr 1.11e-04  5.89 it/s  ETA 40m
+    ep 2 step 13000/26290  loss 2.5778  lr 1.03e-04  5.91 it/s  ETA 37m
+    ep 2 step 14000/26290  loss 2.5877  lr 9.53e-05  5.93 it/s  ETA 35m
+    ep 2 step 15000/26290  loss 2.6240  lr 8.76e-05  5.94 it/s  ETA 32m
+    [ep 2] val loss 1.1552  ppl 3.175  (43s)  <- tot nhat
+    ep 3 step 16000/26290  loss 2.5514  lr 7.98e-05  5.85 it/s  ETA 29m
+    ep 3 step 17000/26290  loss 2.5865  lr 7.20e-05  5.87 it/s  ETA 26m
+    ep 3 step 18000/26290  loss 2.5763  lr 6.43e-05  5.88 it/s  ETA 23m
+    ep 3 step 19000/26290  loss 2.5915  lr 5.65e-05  5.89 it/s  ETA 21m
+    ep 3 step 20000/26290  loss 2.5744  lr 4.88e-05  5.90 it/s  ETA 18m
+    ep 3 step 21000/26290  loss 2.5605  lr 4.10e-05  5.92 it/s  ETA 15m
+    [ep 3] val loss 1.1484  ppl 3.153  (43s)  <- tot nhat
+    ep 4 step 22000/26290  loss 2.5589  lr 3.33e-05  5.85 it/s  ETA 12m
+    ep 4 step 23000/26290  loss 2.5540  lr 2.55e-05  5.87 it/s  ETA 9m
+    ep 4 step 24000/26290  loss 2.5707  lr 1.78e-05  5.88 it/s  ETA 6m
+    ep 4 step 25000/26290  loss 2.5702  lr 1.00e-05  5.89 it/s  ETA 4m
+    ep 4 step 26000/26290  loss 2.5678  lr 2.25e-06  5.90 it/s  ETA 1m
+    [ep 4] val loss 1.1411  ppl 3.130  (43s)  <- tot nhat
+    luu runs_qwen5/rowspace_r4_colperm_s0_last.pt  (0.5 MB)
+    luu runs_qwen5/rowspace_r4_colperm_s0_best.pt  (epoch 4, val 1.1411)
+      sinh 16/630  (3s)
+      sinh 336/630  (80s)
+
+    [rowspace_r4_colperm_s0]  BLEU-4 = 65.68   ROUGE-L = 67.92   (630 cau)
+    vi du: Blue Spice is a coffee shop located in the city centre.
+    sinh 630 cau trong 152s (4.14 cau/s, 103 tu/s)
+
+  do tre (batch 8 x seq 128):
+    forward           134.09 ms  (7.6 k token/s)
+    forward+bwd       319.98 ms  (3.2 k token/s)
+    forward da gop    130.74 ms   -> chua gop cham hon +2.6 %
+
+  ket qua -> runs_qwen5/rowspace_r4_colperm_s0.json  (va them dong vao summary.jsonl)
+  cham diem chinh thuc:  python measure_scores.py runs_qwen5/rowspace_r4_colperm_s0_refs.txt runs_qwen5/rowspace_r4_colperm_s0_hyps.txt

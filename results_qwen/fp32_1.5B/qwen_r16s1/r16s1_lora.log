@@ -1,0 +1,46 @@
+
+=== lora_r16_na_s1 ===
+model=Qwen/Qwen2.5-1.5B  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap E2E NLG...
+  train 42061 vi du | val 4672 | test 630 MR duy nhat
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:  51%|█████     | 171/338 [00:00<00:00, 1666.22it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1727.46it/s]
+
+  TRAIN DUOC: 1.606 M (0.104 % cua 1545.32 M)   [dung model + phan ra: 1.7s]
+
+  train: 42061 vi du, 26290 buoc, lr=0.0002, batch=8
+    ep 0 step 2000/26290  loss 2.6426  lr 1.88e-04  6.15 it/s  ETA 66m
+    ep 0 step 4000/26290  loss 2.6042  lr 1.73e-04  6.18 it/s  ETA 60m
+    [ep 0] val loss 1.1535  ppl 3.169  train 1.1207  gap +0.0328  (47s)  <- tot nhat
+    ep 1 step 6000/26290  loss 2.5842  lr 1.57e-04  5.89 it/s  ETA 57m
+    ep 1 step 8000/26290  loss 2.5649  lr 1.42e-04  5.96 it/s  ETA 51m
+    ep 1 step 10000/26290  loss 2.5762  lr 1.26e-04  6.00 it/s  ETA 45m
+    [ep 1] val loss 1.1408  ppl 3.129  train 1.0781  gap +0.0627  (46s)  <- tot nhat
+    ep 2 step 12000/26290  loss 2.5552  lr 1.11e-04  5.90 it/s  ETA 40m
+    ep 2 step 14000/26290  loss 2.5627  lr 9.53e-05  5.93 it/s  ETA 35m
+    [ep 2] val loss 1.1228  ppl 3.073  train 1.0465  gap +0.0763  (46s)  <- tot nhat
+    ep 3 step 16000/26290  loss 2.5138  lr 7.98e-05  5.86 it/s  ETA 29m
+    ep 3 step 18000/26290  loss 2.4948  lr 6.43e-05  5.90 it/s  ETA 23m
+    ep 3 step 20000/26290  loss 2.5336  lr 4.88e-05  5.92 it/s  ETA 18m
+    [ep 3] val loss 1.1275  ppl 3.088  train 1.0371  gap +0.0904  (46s)
+    ep 4 step 22000/26290  loss 2.5180  lr 3.33e-05  5.87 it/s  ETA 12m
+    ep 4 step 24000/26290  loss 2.5071  lr 1.78e-05  5.89 it/s  ETA 6m
+    ep 4 step 26000/26290  loss 2.4861  lr 2.25e-06  5.92 it/s  ETA 1m
+    [ep 4] val loss 1.1246  ppl 3.079  train 1.0208  gap +0.1039  (46s)
+    luu runs_r16s1/lora_r16_na_s1_last.pt  (6.2 MB)
+    luu runs_r16s1/lora_r16_na_s1_best.pt  (epoch 2, val 1.1228)
+    -> khoi phuc epoch 2 (val 1.1228), thay vi epoch cuoi (1.1246)
+      sinh 16/630  (3s)
+      sinh 336/630  (79s)
+
+    [lora_r16_na_s1]  BLEU-4 = 65.71   ROUGE-L = 67.93   (630 cau)
+    vi du: Blue Spice is a coffee shop in the city centre.
+    sinh 630 cau trong 151s (4.18 cau/s, 103 tu/s)
+
+  do tre (batch 8 x seq 128):
+    forward           132.45 ms  (7.7 k token/s)
+    forward+bwd       316.19 ms  (3.2 k token/s)
+    forward da gop    132.16 ms   -> chua gop cham hon +0.2 %
+
+  ket qua -> runs_r16s1/lora_r16_na_s1.json  (va them dong vao summary.jsonl)
+  cham diem chinh thuc:  python measure_scores.py runs_r16s1/lora_r16_na_s1_refs.txt runs_r16s1/lora_r16_na_s1_hyps.txt

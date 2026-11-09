@@ -1,0 +1,50 @@
+
+=== rowspace_r16_colperm_s1 ===
+model=Qwen/Qwen2.5-1.5B  device=cuda  targets=['self_attn.k_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap E2E NLG...
+  train 42061 vi du | val 4672 | test 630 MR duy nhat
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:  51%|█████     | 172/338 [00:00<00:00, 1704.24it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1739.63it/s]
+  phan ra ['self_attn.k_proj', 'self_attn.v_proj'] (basis=colperm)...
+    7/28 block  (2s)
+    14/28 block  (3s)
+    21/28 block  (5s)
+    28/28 block  (6s)
+
+  TRAIN DUOC: 0.459 M (0.030 % cua 1544.17 M)   [dung model + phan ra: 8.1s]
+
+  train: 42061 vi du, 26290 buoc, lr=0.0002, batch=8
+    ep 0 step 2000/26290  loss 2.6454  lr 1.88e-04  6.13 it/s  ETA 66m
+    ep 0 step 4000/26290  loss 2.6087  lr 1.73e-04  6.10 it/s  ETA 61m
+    [ep 0] val loss 1.1601  ppl 3.190  train 1.1237  gap +0.0365  (47s)  <- tot nhat
+    ep 1 step 6000/26290  loss 2.5854  lr 1.57e-04  5.80 it/s  ETA 58m
+    ep 1 step 8000/26290  loss 2.5684  lr 1.42e-04  5.86 it/s  ETA 52m
+    ep 1 step 10000/26290  loss 2.5825  lr 1.26e-04  5.90 it/s  ETA 46m
+    [ep 1] val loss 1.1468  ppl 3.148  train 1.0789  gap +0.0678  (47s)  <- tot nhat
+    ep 2 step 12000/26290  loss 2.5596  lr 1.11e-04  5.79 it/s  ETA 41m
+    ep 2 step 14000/26290  loss 2.5674  lr 9.53e-05  5.82 it/s  ETA 35m
+    [ep 2] val loss 1.1284  ppl 3.091  train 1.0528  gap +0.0756  (47s)  <- tot nhat
+    ep 3 step 16000/26290  loss 2.5182  lr 7.98e-05  5.75 it/s  ETA 30m
+    ep 3 step 18000/26290  loss 2.4999  lr 6.43e-05  5.78 it/s  ETA 24m
+    ep 3 step 20000/26290  loss 2.5325  lr 4.88e-05  5.81 it/s  ETA 18m
+    [ep 3] val loss 1.1305  ppl 3.097  train 1.0277  gap +0.1027  (47s)
+    ep 4 step 22000/26290  loss 2.5119  lr 3.33e-05  5.75 it/s  ETA 12m
+    ep 4 step 24000/26290  loss 2.5051  lr 1.78e-05  5.78 it/s  ETA 7m
+    ep 4 step 26000/26290  loss 2.4825  lr 2.25e-06  5.80 it/s  ETA 1m
+    [ep 4] val loss 1.1268  ppl 3.086  train 1.0084  gap +0.1184  (47s)  <- tot nhat
+    luu runs_r16s1/rowspace_r16_colperm_s1_last.pt  (1.8 MB)
+    luu runs_r16s1/rowspace_r16_colperm_s1_best.pt  (epoch 4, val 1.1268)
+      sinh 16/630  (3s)
+      sinh 336/630  (80s)
+
+    [rowspace_r16_colperm_s1]  BLEU-4 = 65.43   ROUGE-L = 67.91   (630 cau)
+    vi du: Blue Spice is a coffee shop in the city centre.
+    sinh 630 cau trong 154s (4.08 cau/s, 100 tu/s)
+
+  do tre (batch 8 x seq 128):
+    forward           135.76 ms  (7.5 k token/s)
+    forward+bwd       322.29 ms  (3.2 k token/s)
+    forward da gop    130.78 ms   -> chua gop cham hon +3.8 %
+
+  ket qua -> runs_r16s1/rowspace_r16_colperm_s1.json  (va them dong vao summary.jsonl)
+  cham diem chinh thuc:  python measure_scores.py runs_r16s1/rowspace_r16_colperm_s1_refs.txt runs_r16s1/rowspace_r16_colperm_s1_hyps.txt
