@@ -53,5 +53,6 @@ from slora.surgery import (
     param_counts,
     predict_params,
     resolve,
+    upcast_adapters,
     vera_rank_for,
 )

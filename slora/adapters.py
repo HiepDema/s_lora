@@ -149,9 +149,13 @@ class RowSpaceLinear(nn.Module):
         tall:  out_proj(g@B) = g@[B | B X̄ᵀ]    ->  A_eff = A, B_eff = [B | B X̄ᵀ] permuted
         """
         A, B = self.lora_down, self.lora_up
+        # Adapter fp32 tren base bf16: ngoai autocast phai doi X cho khop dtype. Duoi
+        # autocast thi matmul tu ha ve bf16, nen chep X ra fp32 chi ton bang thong
+        # (2 x 55M phan tu moi tang o 7B, cham ~20%) ma ket qua giong het.
+        X = self.X if torch.is_autocast_enabled(self.X.device.type) else self.X.to(A.dtype)
         if self.orientation == "pre":
-            return torch.cat([A, self.X.T @ A], dim=0).index_select(0, self.inv), B
-        return A, torch.cat([B, B @ self.X.T], dim=1).index_select(1, self.inv)
+            return torch.cat([A, X.T @ A], dim=0).index_select(0, self.inv), B
+        return A, torch.cat([B, B @ X.T], dim=1).index_select(1, self.inv)
 
     def forward(self, x):
         if self.impl == "lowrank":
@@ -177,6 +181,12 @@ class RowSpaceLinear(nn.Module):
     @torch.no_grad()
     def merged_weight(self):
         """Reconstruct the full [d_in, d_out] weight — zero inference overhead."""
+        if self.impl == "lowrank":
+            # Gop vao W0 ma lop da chay, khong dung lai W tu phan ra: o bf16 phan
+            # ra lech ~1e-2, tuc model gop se khac model da train.
+            A, B = self._eff_factors()
+            W = self.W0.T.double() + self.scale * (A.double() @ B.double())
+            return W.to(self.C.dtype)
         C = self.effective_C()
 
         if not self.structured:
@@ -251,8 +261,21 @@ class DoRALinear(nn.Module):
         self.magnitude._no_decay = True
 
     def _col_norm(self):
-        W = self.base.weight + self.scale * (self.down @ self.up).T
-        return W.norm(dim=1).detach()
+        # It nhat fp32, ke ca khi base la bf16 va dang chay duoi autocast: g = m/‖W‖
+        # xap xi 1, ma lam tron bf16 quanh 1 la buoc 0.4-0.8%, lon hon moi thay doi
+        # Adam dua vao m.
+        # Chuan chi doi khi A, B hoac W doi, nen nho lai theo version cua chung: tinh
+        # mot lan moi buoc optimizer thay vi moi micro-batch, va mot lan cho ca luc
+        # cham (generate goi forward moi token). Tinh moi lan lam DoRA cham gap doi.
+        key = (self.down._version, self.up._version, self.base.weight._version,
+               self.down.data_ptr(), self.up.data_ptr(), self.base.weight.data_ptr())
+        if getattr(self, "_norm_key", None) != key:
+            dt = torch.promote_types(self.magnitude.dtype, torch.float32)
+            with torch.no_grad(), torch.autocast(self.base.weight.device.type, enabled=False):
+                W = self.base.weight.to(dt) + self.scale * (self.down.to(dt) @ self.up.to(dt)).T
+                self._norm = W.norm(dim=1)
+            self._norm_key = key
+        return self._norm
 
     def forward(self, x):
         g = self.magnitude / self._col_norm()
@@ -260,7 +283,7 @@ class DoRALinear(nn.Module):
                + self.scale * ((x @ self.down) @ self.up)) * g
         if self.base.bias is not None:
             out = out + self.base.bias
-        return out
+        return out.to(x.dtype)
 
     @torch.no_grad()
     def merged_weight(self):

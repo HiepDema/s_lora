@@ -1,0 +1,75 @@
+### qwen7b slora_smoke bat dau 2026-11-09 14:22:13 UTC
+
+=== cs_hybrid_r32q32_colperm_rms_lowrank_s0_lr0.0001 ===
+model=Qwen/Qwen2.5-7B  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap du lieu...
+Repo card metadata block was not found. Setting CardData to empty.
+  train 857 vi du | eval_max_len 640 | test BoolQ 3270, PIQA 1838, SIQA 1954, HellaSwag 10042, WinoGrande 1267, ARC-e 2376, ARC-c 1172, OBQA 500
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights:  80%|███████▉  | 271/339 [00:00<00:00, 2698.72it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 2810.62it/s]
+  hybrid: S-LoRA r=32 (non-square) + LoRA r=32 (square)...
+    7/28 blocks  (125s)
+    14/28 blocks  (249s)
+    21/28 blocks  (372s)
+    28/28 blocks  (496s)
+    hybrid: 112 S-LoRA (r=32), 28 square LoRA (r=32)
+
+  TRAIN DUOC: 21.103 M (0.183 % cua 11541.62 M)   [setup 500.3s]
+
+  train: 857 vi du, 54 optimizer steps, lr=0.0001, batch=16x2=32
+    ep 0 step 5/54  loss 1.7041  lr 1.00e-04  1.80 it/s  ETA 0m
+    ep 0 step 10/54  loss 1.4096  lr 8.98e-05  1.85 it/s  ETA 0m
+    ep 0 step 15/54  loss 1.1703  lr 7.96e-05  1.90 it/s  ETA 0m
+    ep 0 step 20/54  loss 0.9690  lr 6.94e-05  1.94 it/s  ETA 0m
+      BoolQ        80.00%  (10 cau, 0s)
+      PIQA         80.00%  (10 cau, 1s)
+      SIQA         70.00%  (10 cau, 1s)
+      HellaSwag    80.00%  (10 cau, 2s)
+      WinoGrande   70.00%  (10 cau, 2s)
+      ARC-e        90.00%  (10 cau, 3s)
+      ARC-c        80.00%  (10 cau, 3s)
+      OBQA         60.00%  (10 cau, 4s)
+    >> step 20 cham giua chung (10 cau/tac vu, greedy): TB 76.25%  | BoolQ 80.0 PIQA 80.0 SIQA 70.0 HellaSwag 80.0 WinoGrande 70.0 ARC-e 90.0 ARC-c 80.0 OBQA 60.0
+    ep 0 step 25/54  loss 0.8037  lr 5.92e-05  1.53 it/s  ETA 0m
+      BoolQ        80.00%  (10 cau, 0s)
+      PIQA         70.00%  (10 cau, 1s)
+      SIQA         60.00%  (10 cau, 1s)
+      HellaSwag    70.00%  (10 cau, 2s)
+      WinoGrande   90.00%  (10 cau, 2s)
+      ARC-e        80.00%  (10 cau, 3s)
+      ARC-c        80.00%  (10 cau, 3s)
+      OBQA         90.00%  (10 cau, 4s)
+    >> epoch 0 xong (step 27, loss 0.7472) cham 10 cau/tac vu, greedy: TB 77.50%  | BoolQ 80.0 PIQA 70.0 SIQA 60.0 HellaSwag 70.0 WinoGrande 90.0 ARC-e 80.0 ARC-c 80.0 OBQA 90.0
+    ep 1 step 30/54  loss 0.6662  lr 4.90e-05  1.34 it/s  ETA 0m
+    ep 1 step 35/54  loss 0.5467  lr 3.88e-05  1.41 it/s  ETA 0m
+    ep 1 step 40/54  loss 0.4508  lr 2.86e-05  1.48 it/s  ETA 0m
+      BoolQ        50.00%  (10 cau, 0s)
+      PIQA         70.00%  (10 cau, 1s)
+      SIQA         80.00%  (10 cau, 1s)
+      HellaSwag    70.00%  (10 cau, 2s)
+      WinoGrande   80.00%  (10 cau, 2s)
+      ARC-e        80.00%  (10 cau, 3s)
+      ARC-c        80.00%  (10 cau, 3s)
+      OBQA        100.00%  (10 cau, 3s)
+    >> step 40 cham giua chung (10 cau/tac vu, greedy): TB 76.25%  | BoolQ 50.0 PIQA 70.0 SIQA 80.0 HellaSwag 70.0 WinoGrande 80.0 ARC-e 80.0 ARC-c 80.0 OBQA 100.0
+    ep 1 step 45/54  loss 0.3737  lr 1.84e-05  1.35 it/s  ETA 0m
+    ep 1 step 50/54  loss 0.3177  lr 8.16e-06  1.40 it/s  ETA 0m
+    luu runs_cs4_qwen7b_smoke/cs_hybrid_r32q32_colperm_rms_lowrank_s0_lr0.0001_last.pt  (80.6 MB)
+
+  danh gia 8 tac vu (epoch cuoi):
+      BoolQ        80.00%  (20 cau, 1s)
+      PIQA         75.00%  (20 cau, 3s)
+      SIQA         70.00%  (20 cau, 4s)
+      HellaSwag    75.00%  (20 cau, 5s)
+      WinoGrande   70.00%  (20 cau, 7s)
+      ARC-e        80.00%  (20 cau, 8s)
+      ARC-c        85.00%  (20 cau, 9s)
+      OBQA         95.00%  (20 cau, 11s)
+
+    TRUNG BINH: 78.75%
+
+  do tre: fwd 82.95 ms | fwd+bwd 161.41 ms | sau merge 45.02 ms
+
+  ket qua -> runs_cs4_qwen7b_smoke/cs_hybrid_r32q32_colperm_rms_lowrank_s0_lr0.0001.json
+### qwen7b slora_smoke ket thuc rc=0 2026-11-09 14:32:00 UTC

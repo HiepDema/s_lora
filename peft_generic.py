@@ -40,6 +40,7 @@ from slora.surgery import (                            # noqa: F401
     param_counts,
     predict_params,
     resolve,
+    upcast_adapters,
     vera_rank_for,
 )
 

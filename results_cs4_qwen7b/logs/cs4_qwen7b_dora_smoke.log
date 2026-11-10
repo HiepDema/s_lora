@@ -1,0 +1,69 @@
+### qwen7b dora_smoke bat dau 2026-11-09 14:32:00 UTC
+
+=== cs_dora_r32_na_s0_lr0.0001 ===
+model=Qwen/Qwen2.5-7B  device=cuda  targets=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'mlp.up_proj', 'mlp.down_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  nap du lieu...
+Repo card metadata block was not found. Setting CardData to empty.
+  train 857 vi du | eval_max_len 640 | test BoolQ 3270, PIQA 1838, SIQA 1954, HellaSwag 10042, WinoGrande 1267, ARC-e 2376, ARC-c 1172, OBQA 500
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights:  64%|██████▎   | 216/339 [00:00<00:00, 2109.69it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 2514.07it/s]
+
+  TRAIN DUOC: 54.893 M (0.716 % cua 7670.51 M)   [setup 4.3s]
+
+  train: 857 vi du, 54 optimizer steps, lr=0.0001, batch=16x2=32
+    ep 0 step 5/54  loss 1.6661  lr 1.00e-04  1.15 it/s  ETA 1m
+    ep 0 step 10/54  loss 1.3846  lr 8.98e-05  1.23 it/s  ETA 1m
+    ep 0 step 15/54  loss 1.1517  lr 7.96e-05  1.28 it/s  ETA 1m
+    ep 0 step 20/54  loss 0.9525  lr 6.94e-05  1.32 it/s  ETA 0m
+      BoolQ        80.00%  (10 cau, 1s)
+      PIQA         80.00%  (10 cau, 2s)
+      SIQA         70.00%  (10 cau, 3s)
+      HellaSwag    70.00%  (10 cau, 4s)
+      WinoGrande   80.00%  (10 cau, 5s)
+      ARC-e        90.00%  (10 cau, 6s)
+      ARC-c        90.00%  (10 cau, 7s)
+      OBQA         80.00%  (10 cau, 8s)
+    >> step 20 cham giua chung (10 cau/tac vu, greedy): TB 80.00%  | BoolQ 80.0 PIQA 80.0 SIQA 70.0 HellaSwag 70.0 WinoGrande 80.0 ARC-e 90.0 ARC-c 90.0 OBQA 80.0
+    ep 0 step 25/54  loss 0.7904  lr 5.92e-05  0.96 it/s  ETA 1m
+      BoolQ        80.00%  (10 cau, 1s)
+      PIQA         90.00%  (10 cau, 2s)
+      SIQA         60.00%  (10 cau, 3s)
+      HellaSwag    70.00%  (10 cau, 4s)
+      WinoGrande   90.00%  (10 cau, 5s)
+      ARC-e        90.00%  (10 cau, 6s)
+      ARC-c        80.00%  (10 cau, 7s)
+      OBQA        100.00%  (10 cau, 7s)
+    >> epoch 0 xong (step 27, loss 0.7360) cham 10 cau/tac vu, greedy: TB 82.50%  | BoolQ 80.0 PIQA 90.0 SIQA 60.0 HellaSwag 70.0 WinoGrande 90.0 ARC-e 90.0 ARC-c 80.0 OBQA 100.0
+    ep 1 step 30/54  loss 0.6554  lr 4.90e-05  0.81 it/s  ETA 0m
+    ep 1 step 35/54  loss 0.5399  lr 3.88e-05  0.86 it/s  ETA 0m
+    ep 1 step 40/54  loss 0.4436  lr 2.86e-05  0.91 it/s  ETA 0m
+      BoolQ        70.00%  (10 cau, 1s)
+      PIQA         80.00%  (10 cau, 2s)
+      SIQA         70.00%  (10 cau, 3s)
+      HellaSwag    70.00%  (10 cau, 4s)
+      WinoGrande   80.00%  (10 cau, 5s)
+      ARC-e        80.00%  (10 cau, 6s)
+      ARC-c        70.00%  (10 cau, 7s)
+      OBQA        100.00%  (10 cau, 7s)
+    >> step 40 cham giua chung (10 cau/tac vu, greedy): TB 77.50%  | BoolQ 70.0 PIQA 80.0 SIQA 70.0 HellaSwag 70.0 WinoGrande 80.0 ARC-e 80.0 ARC-c 70.0 OBQA 100.0
+    ep 1 step 45/54  loss 0.3685  lr 1.84e-05  0.81 it/s  ETA 0m
+    ep 1 step 50/54  loss 0.3063  lr 8.16e-06  0.85 it/s  ETA 0m
+    luu runs_cs4_qwen7b_smoke/cs_dora_r32_na_s0_lr0.0001_last.pt  (209.5 MB)
+
+  danh gia 8 tac vu (epoch cuoi):
+      BoolQ        80.00%  (20 cau, 3s)
+      PIQA         85.00%  (20 cau, 6s)
+      SIQA         60.00%  (20 cau, 9s)
+      HellaSwag    75.00%  (20 cau, 12s)
+      WinoGrande   70.00%  (20 cau, 17s)
+      ARC-e        90.00%  (20 cau, 19s)
+      ARC-c        80.00%  (20 cau, 22s)
+      OBQA        100.00%  (20 cau, 25s)
+
+    TRUNG BINH: 80.00%
+
+  do tre: fwd 169.15 ms | fwd+bwd 268.22 ms | sau merge 45.58 ms
+
+  ket qua -> runs_cs4_qwen7b_smoke/cs_dora_r32_na_s0_lr0.0001.json
+### qwen7b dora_smoke ket thuc rc=0 2026-11-09 14:33:50 UTC

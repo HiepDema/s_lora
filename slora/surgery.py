@@ -237,10 +237,31 @@ def apply_pissa(model, targets, rank, alpha, dtype=torch.float64):
         down, up = U[:, :rank] * sq, sq[:, None] * Vh[:rank]
         m.down.copy_(down.to(W.dtype))
         m.up.copy_(up.to(W.dtype))
-        W.copy_((W.to(dtype) - m.scale * (down @ up).T).to(W.dtype))
+        # Tru dung gia tri DA luu (da lam tron theo dtype cua model), de phan du
+        # cong A·B tra lai dung W₀ ke ca khi model la bf16.
+        W.copy_((W.to(dtype) - m.scale * (m.down.to(dtype) @ m.up.to(dtype)).T).to(W.dtype))
         # A, B bat dau o thanh phan chinh cua W₀, khong phai 0: weight decay keo
         # chung ve 0 la keo model ra xa W₀, nen mien decay cho hai tham so nay.
         m.down._no_decay = m.up._no_decay = True
+    return model
+
+
+@torch.no_grad()
+def upcast_adapters(model, dtype=torch.float32):
+    """Tham so train duoc len ``dtype``, phan dong bang giu nguyen (thuong la bf16).
+
+    Day la fp32 master weights cua mixed precision: forward chay duoi autocast
+    bf16, nhung buoc Adam cong vao ban fp32. Adapter de bf16 thi buoc lr ~1e-4 nho
+    hon nua ulp cua phan lon phan tu va bi lam tron mat (LoRA sap tren commonsense,
+    PiSSA dung yen tren DART). Goi ngay sau khi gan adapter, truoc khi train.
+    """
+    for p in model.parameters():
+        if p.requires_grad:
+            p.data = p.data.to(dtype)
+    for m in model.modules():
+        if isinstance(m, DoRALinear):
+            # m da bi lam tron theo dtype cu; tinh lai de luc dau m/‖W₀‖ = 1 dung.
+            m.magnitude.data = m._col_norm().to(dtype)
     return model
 
 

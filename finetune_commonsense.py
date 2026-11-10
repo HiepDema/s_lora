@@ -29,8 +29,8 @@ import urllib.request
 import torch
 import torch.nn as nn
 
-from peft_generic import (TARGETS, apply_hybrid, apply_lora, convert_rowspace,
-                          merge_all, param_counts)
+from peft_generic import (TARGETS, apply_dora, apply_hybrid, apply_lora, apply_pissa,
+                          convert_rowspace, merge_all, param_counts, upcast_adapters)
 
 TRAIN_REPO = "zwhe99/commonsense_170k"
 GH = ("https://raw.githubusercontent.com/AGI-Edgerunners/LLM-Adapters/main/dataset/"
@@ -108,6 +108,12 @@ def make_batches(data, batch):
     return out
 
 
+def amp(a):
+    """autocast bf16 khi base bf16 + adapter fp32 (--fp32-adapters); con lai tat."""
+    return torch.autocast(str(a.device).split(":")[0], dtype=torch.bfloat16,
+                          enabled=getattr(a, "amp", False))
+
+
 # =========================================================================== cham diem
 
 def extract(text, task):
@@ -151,9 +157,10 @@ def evaluate(model, tok, tests, a):
             # LLM-Adapters/DoRA cham bang beam search 4 nhanh (num_beams=4, khong
             # sample). Mac dinh van la greedy cho nhanh; --eval-beams 4 de so
             # dung voi cac so co dau * trong bang cua DoRA / MoC.
-            out = model.generate(**enc, max_new_tokens=a.max_new_tokens,
-                                 num_beams=a.eval_beams, do_sample=False,
-                                 pad_token_id=tok.eos_token_id)
+            with amp(a):
+                out = model.generate(**enc, max_new_tokens=a.max_new_tokens,
+                                     num_beams=a.eval_beams, do_sample=False,
+                                     pad_token_id=tok.eos_token_id)
             for j, r in enumerate(ch):
                 gen = tok.decode(out[j, enc.input_ids.shape[1]:], skip_special_tokens=True)
                 ok += extract(gen, task) == str(r["answer"]).strip().lower()
@@ -192,7 +199,7 @@ def bench_model(model, a, prefix=""):
                         (a.bench_batch, a.bench_seq), device=a.device)
     ntok, out, was = a.bench_batch * a.bench_seq, {}, model.training
     model.eval()
-    with torch.no_grad():
+    with torch.no_grad(), amp(a):
         ms = timeit_cuda(lambda: model(ids), a.device, a.bench_iters)
     out[prefix + "fwd_ms"] = round(ms, 3)
     out[prefix + "fwd_ktok_s"] = round(ntok / ms, 1)
@@ -201,7 +208,9 @@ def bench_model(model, a, prefix=""):
         model.train()
 
         def step():
-            model(ids, labels=ids).loss.backward()
+            with amp(a):
+                loss = model(ids, labels=ids).loss
+            loss.backward()
             for p in tp:
                 p.grad = None
 
@@ -213,9 +222,20 @@ def bench_model(model, a, prefix=""):
 
 # =========================================================================== train
 
+def _per_task(r, tests):
+    return " ".join(f"{SHORT[t]} {r[t]:.1f}" for t in tests)
+
+
 def train(model, data, tok, a):
     tp = [p for p in model.parameters() if p.requires_grad]
-    opt = torch.optim.AdamW(tp, lr=a.lr, weight_decay=a.weight_decay)
+    # _no_decay: tham so khong khoi tao o 0 (m cua DoRA, A/B cua PiSSA). Weight
+    # decay keo chung ve 0 la keo model ra xa W0.
+    nd = [p for p in tp if getattr(p, "_no_decay", False)]
+    groups = [dict(params=[p for p in tp if not getattr(p, "_no_decay", False)],
+                   weight_decay=a.weight_decay)]
+    if nd:
+        groups.append(dict(params=nd, weight_decay=0.0))
+    opt = torch.optim.AdamW(groups, lr=a.lr)
     accum = getattr(a, "grad_accum", 1)
     micro_per_epoch = math.ceil(len(data) / a.batch)
     steps = math.ceil(micro_per_epoch / accum) * a.epochs
@@ -240,10 +260,15 @@ def train(model, data, tok, a):
         for bidx in make_batches(data, a.batch):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
             ids, lab, att = ids.to(a.device), lab.to(a.device), att.to(a.device)
-            lg = model(input_ids=ids, attention_mask=att).logits
-            loss = lossf(lg[:, :-1].reshape(-1, lg.shape[-1]), lab[:, 1:].reshape(-1))
+            with amp(a):                # loss trong autocast: cross_entropy chay fp32
+                lg = model(input_ids=ids, attention_mask=att).logits
+                loss = lossf(lg[:, :-1].reshape(-1, lg.shape[-1]), lab[:, 1:].reshape(-1))
             (loss / accum).backward()
-            run = loss.item() if run is None else 0.98 * run + 0.02 * loss.item()
+            li = loss.item()
+            if not math.isfinite(li):
+                # Dung ngay thay vi train tiep hang gio tren mot model da hong.
+                raise RuntimeError(f"loss = {li} o step {step} (epoch {ep})")
+            run = li if run is None else 0.98 * run + 0.02 * li
             micro += 1
             if micro % accum == 0:
                 torch.nn.utils.clip_grad_norm_(tp, 1.0)
@@ -261,8 +286,15 @@ def train(model, data, tok, a):
                     r = evaluate(model, tok, a.tests, a_mid)
                     mid.append(dict(step=step, loss=run, **r))
                     print(f"    >> step {step} cham giua chung ({a.eval_limit_mid} cau/tac vu, "
-                          f"greedy): TB {r['avg']:.2f}%", flush=True)
+                          f"greedy): TB {r['avg']:.2f}%  | {_per_task(r, a.tests)}", flush=True)
                     model.train()
+        if a.eval_every and ep < a.epochs - 1:
+            # Cuoi moi epoch (tru epoch cuoi, da co cham day du ngay sau).
+            r = evaluate(model, tok, a.tests, a_mid)
+            mid.append(dict(step=step, epoch=ep, loss=run, **r))
+            print(f"    >> epoch {ep} xong (step {step}, loss {run:.4f}) cham {a.eval_limit_mid} "
+                  f"cau/tac vu, greedy: TB {r['avg']:.2f}%  | {_per_task(r, a.tests)}", flush=True)
+            model.train()
     if micro % accum != 0:
         torch.nn.utils.clip_grad_norm_(tp, 1.0)
         opt.step()
@@ -290,6 +322,9 @@ def build_model(a):
     dtype = torch.bfloat16 if getattr(a, "bf16", False) else torch.float32
     m = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=dtype)
     n0 = sum(p.numel() for p in m.parameters())
+    # Len GPU truoc khi gan adapter: SVD float64 cua PiSSA va phan ra cua S-LoRA
+    # tren 160 ma tran 8B rat cham tren CPU.
+    m = m.to(a.device)
     if a.method == "rowspace":
         print(f"  phan ra {a.targets} (basis={a.basis})...", flush=True)
         convert_rowspace(m, a.targets, a.basis, a.rank, a.alpha, a.dtype, verbose=True,
@@ -302,12 +337,19 @@ def build_model(a):
         apply_hybrid(m, a.targets, a.rank, rs, a.alpha, als,
                      a.basis, a.dtype, verbose=True,
                      cache=getattr(a, "fac_cache", None),
-                     norm=getattr(a, "slora_norm", None))
+                     norm=getattr(a, "slora_norm", None),
+                     impl=getattr(a, "slora_impl", "factored"))
     elif a.method == "lora":
         apply_lora(m, a.targets, a.rank, a.alpha)
+    elif a.method == "dora":
+        apply_dora(m, a.targets, a.rank, a.alpha)
+    elif a.method == "pissa":
+        apply_pissa(m, a.targets, a.rank, a.alpha)
     elif a.method == "none":
         for p in m.parameters():
             p.requires_grad_(False)
+    if getattr(a, "amp", False):
+        upcast_adapters(m)
     if getattr(a, "grad_ckpt", False):
         # Non-reentrant: backbone dong bang nen input cua block khong co grad;
         # ban reentrant se lang le bo gradient cua adapter ben trong block.
@@ -322,7 +364,7 @@ def main():
     p = argparse.ArgumentParser(description="Commonsense reasoning: rowspace vs lora")
     p.add_argument("--model", default="unsloth/Llama-3.2-1B")
     p.add_argument("--method", required=True,
-                   choices=["rowspace", "lora", "hybrid", "none"])
+                   choices=["rowspace", "lora", "hybrid", "dora", "pissa", "none"])
     p.add_argument("--rank", type=int, default=4)
     p.add_argument("--rank-square", type=int, default=None,
                    help="LoRA rank cho ma tran vuong khi --method hybrid (mac dinh = rank)")
@@ -331,6 +373,10 @@ def main():
     p.add_argument("--basis", choices=["colperm", "svd"], default="colperm")
     p.add_argument("--slora-norm", choices=["rms"], default=None,
                    help="rms: chia scale cua S-LoRA cho ‖P‖_F/√k de bu do khuech dai cua X̄")
+    p.add_argument("--slora-impl", choices=["factored", "lowrank"], default="factored",
+                   help="lowrank: phan dong bang chay qua W0 nguyen ban nhu LoRA, chi "
+                        "delta di qua X̄. Cung ham; sai so lam tron va toc do nhu LoRA. "
+                        "factored o bf16 lech khoi model goc ~1e-2 ngay khi chua train.")
     p.add_argument("--target-set", default="qwen2_kv", choices=sorted(TARGETS))
     p.add_argument("--epochs", type=int, default=3)
     p.add_argument("--batch", type=int, default=8)
@@ -339,6 +385,10 @@ def main():
     p.add_argument("--lr", type=float, default=2e-4)
     p.add_argument("--bf16", action="store_true",
                    help="nap model bf16 (tiet kiem ~50%% VRAM)")
+    p.add_argument("--fp32-adapters", action="store_true",
+                   help="cung --bf16: base bf16, adapter fp32, forward duoi autocast bf16 "
+                        "(nhu PEFT). Thieu no thi adapter cung bf16 va buoc Adam nho bi "
+                        "lam tron mat.")
     p.add_argument("--fac-cache", default=None,
                    help="thu muc cache pivot cho pivoted QR (tiet kiem ~80 phut o 8B)")
     p.add_argument("--weight-decay", type=float, default=0.01)
@@ -380,6 +430,7 @@ def main():
         torch.backends.cudnn.allow_tf32 = True
     a.dtype = torch.float32 if a.fp32_factorize else torch.float64
     a.targets = TARGETS[a.target_set]
+    a.amp = a.bf16 and a.fp32_adapters
     if a.alpha is None:
         a.alpha = a.rank
     random.seed(a.seed)
@@ -388,7 +439,8 @@ def main():
 
     if a.method == "hybrid":
         rs = a.rank_square or a.rank
-        tag = f"cs_hybrid_r{a.rank}q{rs}_{a.basis}{'_' + a.slora_norm if a.slora_norm else ''}_s{a.seed}"
+        tag = (f"cs_hybrid_r{a.rank}q{rs}_{a.basis}{'_' + a.slora_norm if a.slora_norm else ''}"
+               f"{'_lowrank' if a.slora_impl == 'lowrank' else ''}_s{a.seed}")
     elif a.method == "rowspace":
         tag = f"cs_rowspace_r{a.rank}_{a.basis}_s{a.seed}"
     else:
@@ -446,7 +498,7 @@ def main():
 
     if not a.no_bench:
         res["bench"] = bench_model(model, a)
-        if a.method in ("rowspace", "lora", "hybrid"):
+        if a.method in ("rowspace", "lora", "hybrid", "dora", "pissa"):
             merge_all(model, a.targets)
             res["bench"].update(bench_model(model, a, prefix="merged_"))
         b = res["bench"]
@@ -461,7 +513,8 @@ def main():
             tag=tag, method=a.method, rank=a.rank, alpha=a.alpha,
             rank_square=a.rank_square, alpha_square=a.alpha_square,
             lr=a.lr, batch=a.batch, grad_accum=a.grad_accum,
-            eval_beams=a.eval_beams, bf16=a.bf16, slora_norm=a.slora_norm,
+            eval_beams=a.eval_beams, bf16=a.bf16, fp32_adapters=a.fp32_adapters,
+            slora_norm=a.slora_norm, slora_impl=a.slora_impl,
             basis=a.basis if a.method in ("rowspace", "hybrid") else "na", seed=a.seed,
             trainable=info["trainable"], model=a.model, targets=",".join(a.targets),
             max_train=a.max_train, epochs=a.epochs, setup_s=setup_s,

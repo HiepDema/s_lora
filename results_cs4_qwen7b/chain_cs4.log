@@ -1,0 +1,29 @@
+### [smoke:lora] bat dau 2026-11-09 14:17:48 UTC
+    loss 1.6602 -> 0.3067
+    ok: 54.13M tham so, 1.808 it/s, VRAM 45.91 GB, merged fwd 45.013 ms
+### [smoke:lora] ket thuc rc=0 2026-11-09 14:18:44 UTC
+### [smoke:pissa] bat dau 2026-11-09 14:18:44 UTC
+    loss 1.6893 -> 0.3097
+    ok: 54.13M tham so, 1.922 it/s, VRAM 45.91 GB, merged fwd 46.499 ms
+### [smoke:pissa] ket thuc rc=0 2026-11-09 14:22:13 UTC
+### [smoke:slora] bat dau 2026-11-09 14:22:13 UTC
+    loss 1.7041 -> 0.3177
+    ok: 21.10M tham so, 1.437 it/s, VRAM 58.77 GB, merged fwd 45.02 ms
+### [smoke:slora] ket thuc rc=0 2026-11-09 14:32:00 UTC
+### [smoke:dora] bat dau 2026-11-09 14:32:00 UTC
+    loss 1.6661 -> 0.3063
+    ok: 54.89M tham so, 0.876 it/s, VRAM 51.71 GB, merged fwd 45.577 ms
+### [smoke:dora] ket thuc rc=0 2026-11-09 14:33:50 UTC
+### [full:lora] bat dau 2026-11-09 14:33:50 UTC
+    TRUNG BINH: 83.21%
+### [full:lora] ket thuc rc=0 2026-11-09 16:33:05 UTC
+### [full:pissa] bat dau 2026-11-09 16:33:05 UTC
+    TRUNG BINH: 86.23%
+### [full:pissa] ket thuc rc=0 2026-11-09 18:35:00 UTC
+### [full:slora] bat dau 2026-11-09 18:35:00 UTC
+    TRUNG BINH: 86.11%
+### [full:slora] ket thuc rc=0 2026-11-09 20:43:57 UTC
+### [full:dora] bat dau 2026-11-09 20:43:57 UTC
+    TRUNG BINH: 83.66%
+### [full:dora] ket thuc rc=0 2026-11-09 23:32:36 UTC
+### CHUOI XONG 2026-11-09 23:32:36 UTC

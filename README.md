@@ -451,6 +451,63 @@ per-layer α. The factorization itself is exact:
 - The fp64 residual is about 1e-13.
 - The untrained hybrid matches the base model to KL 0.003, with 97% top-1 agreement.
 
+### Qwen2.5-7B: S-LoRA against LoRA, DoRA and PiSSA
+
+The same protocol on Qwen2.5-7B, with all four methods run on one pipeline. Settings:
+
+- **Shared recipe.** `q,k,v,up,down`, 3 epochs, batch 16 × 2, max length 256, weight decay
+  0.01, warmup 100, α = 2r, and one lr of 1e-4 for every method. Each run takes 13,836
+  steps, because examples whose prompt fills the 256 tokens are dropped.
+- **Precision.** The base model is bf16, the adapters are fp32, and the forward pass runs
+  under bf16 autocast (`--fp32-adapters`), as PEFT does. The LLaMA3 runs above kept the
+  adapters in bf16. There, Adam's steps fall below half an ulp for most entries and are
+  rounded away; this is what collapsed LoRA in that pipeline.
+- **S-LoRA at the same rank as the others.** r=32 on `k,v,up,down`, and LoRA r=32 on the
+  square `q`, with `rms` and `--slora-impl lowrank`. That comes to 39% of LoRA's parameters.
+- **Scoring and seeds.** Beam-4 on the full test sets, one seed, one H100 PCIe. Logs are in
+  `results_cs4_qwen7b/`; to rerun, use `bash run_cs_4methods.sh lora|dora|pissa|slora`, or
+  `chain_cs4.sh` for all four in sequence.
+
+| Method | Params | BoolQ | PIQA | SIQA | HellaS. | WinoG. | ARC-e | ARC-c | OBQA | **Avg** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LoRA r=32 | 54.13M (0.71%) | 71.13 | 85.36 | 78.71 | 89.13 | 84.53 | 89.81 | 80.38 | 86.60 | 83.21 |
+| DoRA r=32 | 54.89M (0.72%) | 71.44 | 85.64 | 79.02 | 89.49 | 85.64 | 90.74 | 80.89 | 86.40 | 83.66 |
+| PiSSA r=32 | 54.13M (0.71%) | **73.70** | 88.25 | 79.94 | **93.30** | **86.90** | 93.22 | **84.56** | **90.00** | **86.23** |
+| **S-LoRA r=32** | **21.10M (0.28%)** | 71.77 | **89.34** | **80.35** | 92.91 | 86.42 | **94.11** | 84.22 | 89.80 | 86.11 |
+
+**At the same rank, with 39% of the parameters, S-LoRA beats LoRA by 2.90 and DoRA by
+2.45, and ties PiSSA (−0.12).** It is best of the four on PIQA, SIQA and ARC-e.
+
+Cost on the same H100 PCIe. Latency is measured at batch 8 × 128 tokens:
+
+| | LoRA | PiSSA | S-LoRA | DoRA |
+|---|---|---|---|---|
+| Training wall time | 98 min | 98 min | 106 min | 144 min |
+| Throughput (optimizer steps/s) | 2.36 | 2.36 | 2.18 | 1.60 |
+| Peak training memory | 46.1 GB | 46.1 GB | 52.9 GB | 52.0 GB |
+| Forward + backward, unmerged | 129.3 ms | 126.4 ms | 142.8 ms | 160.4 ms |
+| **Forward, merged** | **45.2 ms** | **46.0 ms** | **45.0 ms** | **45.4 ms** |
+
+- **Training: S-LoRA costs 8% more than LoRA, DoRA 47% more.**
+  - S-LoRA's lowrank path runs the frozen part through `W₀`, as LoRA does. That replaces
+    the 27% overhead of the factored path seen on LLaMA3-8B.
+  - The extra memory is that `W₀` buffer.
+- **Inference: all four merge into `W₀ + ΔW`, so they cost the same.**
+
+Four limits on this table:
+
+- **One seed.** The 2.5–3 point gap between {PiSSA, S-LoRA} and {LoRA, DoRA} is larger
+  than the seed spreads measured elsewhere in this README. The 0.12 between PiSSA and
+  S-LoRA is not a difference.
+- **One shared lr.** It is not tuned per method, and the lr section above shows that a
+  shared rate can favour one parameterization over another.
+- **Initialization.** LoRA, DoRA and S-LoRA all initialize `A` with a bound of `1/√r`
+  (Kaiming on a `(d_in, r)` tensor). That is about 10× PEFT's `1/√d_in` at these sizes.
+  PiSSA initializes from the SVD instead. Whether this initialization, together with the
+  shared lr, costs LoRA and DoRA here has not been tested.
+- **No published anchor.** There are no published Qwen2.5-7B numbers on this benchmark.
+  The LLaMA3-8B rows above come from a different model and are not comparable.
+
 ## VTAB-1k on ViT-B/16
 
 The 19 VTAB-1k tasks under the NOAH / FacT protocol. The base model is ViT-B/16 with the
