@@ -1,0 +1,16 @@
+### [full:lora] bat dau 2026-11-10 14:59:24 UTC
+    [drop_lora_r32_na_s0_lr0.0001]  F1 = 82.58   EM = 80.00   (9536 cau, 162s)
+### [full:lora] ket thuc rc=0 2026-11-10 16:51:35 UTC
+### [full:pissa] bat dau 2026-11-10 16:51:35 UTC
+    [drop_pissa_r32_na_s0_lr0.0001]  F1 = 84.46   EM = 82.05   (9536 cau, 159s)
+### [full:pissa] ket thuc rc=0 2026-11-10 18:45:54 UTC
+### [full:slora] bat dau 2026-11-10 18:45:54 UTC
+    [drop_hybrid_r32q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 85.09   EM = 82.69   (9536 cau, 164s)
+### [full:slora] ket thuc rc=0 2026-11-10 20:40:37 UTC
+### [full:slora_budget] bat dau 2026-11-10 20:40:37 UTC
+    [drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 84.28   EM = 81.84   (9536 cau, 168s)
+### [full:slora_budget] ket thuc rc=0 2026-11-10 22:36:27 UTC
+### [full:dora] bat dau 2026-11-10 22:36:27 UTC
+    [drop_dora_r32_na_s0_lr0.0001]  F1 = 83.66   EM = 81.20   (9536 cau, 167s)
+### [full:dora] ket thuc rc=0 2026-11-11 00:42:58 UTC
+### CHUOI XONG 2026-11-11 00:42:58 UTC

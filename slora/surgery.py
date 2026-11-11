@@ -55,6 +55,9 @@ TARGETS = {
     "qkvud": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj",
               "mlp.up_proj", "mlp.down_proj"],
 
+    # QuanTA / PMSS tren DROP: chi q,v.
+    "qv": ["self_attn.q_proj", "self_attn.v_proj"],
+
     # timm ViT: ca 6 ma tran q,k,v,o,fc1,fc2. q,k,v nam chung trong attn.qkv
     # (3d x d, khong vuong): S-LoRA phan ra ca khoi gop, con LoRA thi dung
     # apply_lora(..., split={"attn.qkv": 3}) de co 3 adapter rieng cho q, k, v.

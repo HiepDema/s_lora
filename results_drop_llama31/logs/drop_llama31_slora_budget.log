@@ -1,0 +1,102 @@
+### slora_budget bat dau 2026-11-10 14:39:07 UTC
+
+=== drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001 ===
+model=unsloth/Meta-Llama-3.1-8B  targets=['self_attn.q_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+    13 mau dai hon 1024 token, da cat dau doan van
+    7 mau dai hon 1024 token, da cat dau doan van
+  train 2000 | val 800 | test 1200  (tu 77409 train / 9536 dev, seed 42)
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 7497.19it/s]
+  hybrid: S-LoRA r=80 (non-square) + LoRA r=32 (square)...
+    8/32 blocks  (0s)
+    16/32 blocks  (0s)
+    24/32 blocks  (0s)
+    32/32 blocks  (0s)
+    hybrid: 32 S-LoRA (r=80), 32 square LoRA (r=32)
+
+  TRAIN DUOC: 13.631 M   [setup 3.5s]
+
+  train: 2000 vi du, 750 optimizer steps, lr=0.0001, batch=4x2=8
+    ep 0 step 25/750  loss 1.0694  lr 9.67e-05  3.66 it/s  ETA 3m
+    ep 0 step 50/750  loss 0.7901  lr 9.33e-05  3.99 it/s  ETA 3m
+    ep 0 step 75/750  loss 0.6456  lr 9.00e-05  3.98 it/s  ETA 3m
+    ep 0 step 100/750  loss 0.5714  lr 8.67e-05  4.11 it/s  ETA 3m
+    ep 0 step 125/750  loss 0.5903  lr 8.33e-05  4.14 it/s  ETA 3m
+    ep 0 step 150/750  loss 0.5072  lr 8.00e-05  4.17 it/s  ETA 2m
+    ep 0 step 175/750  loss 0.5301  lr 7.67e-05  4.12 it/s  ETA 2m
+    ep 0 step 200/750  loss 0.5374  lr 7.33e-05  4.13 it/s  ETA 2m
+    ep 0 step 225/750  loss 0.5272  lr 7.00e-05  4.13 it/s  ETA 2m
+    ep 0 step 250/750  loss 0.4457  lr 6.67e-05  4.09 it/s  ETA 2m
+    [ep 0] val loss 0.4755  train 0.4457  (800 mau val)  <- tot nhat
+    ep 1 step 275/750  loss 0.2834  lr 6.33e-05  3.57 it/s  ETA 2m
+    ep 1 step 300/750  loss 0.2462  lr 6.00e-05  3.62 it/s  ETA 2m
+    ep 1 step 325/750  loss 0.2102  lr 5.67e-05  3.68 it/s  ETA 2m
+    ep 1 step 350/750  loss 0.2870  lr 5.33e-05  3.72 it/s  ETA 2m
+    ep 1 step 375/750  loss 0.3008  lr 5.00e-05  3.74 it/s  ETA 2m
+    ep 1 step 400/750  loss 0.2495  lr 4.67e-05  3.77 it/s  ETA 2m
+    ep 1 step 425/750  loss 0.3252  lr 4.33e-05  3.77 it/s  ETA 1m
+    ep 1 step 450/750  loss 0.2988  lr 4.00e-05  3.80 it/s  ETA 1m
+    ep 1 step 475/750  loss 0.2736  lr 3.67e-05  3.82 it/s  ETA 1m
+    ep 1 step 500/750  loss 0.2740  lr 3.33e-05  3.85 it/s  ETA 1m
+    [ep 1] val loss 0.5014  train 0.2740  (800 mau val)
+    ep 2 step 525/750  loss 0.1835  lr 3.00e-05  3.60 it/s  ETA 1m
+    ep 2 step 550/750  loss 0.1368  lr 2.67e-05  3.62 it/s  ETA 1m
+    ep 2 step 575/750  loss 0.1427  lr 2.33e-05  3.65 it/s  ETA 1m
+    ep 2 step 600/750  loss 0.1091  lr 2.00e-05  3.66 it/s  ETA 1m
+    ep 2 step 625/750  loss 0.1135  lr 1.67e-05  3.67 it/s  ETA 1m
+    ep 2 step 650/750  loss 0.1341  lr 1.33e-05  3.69 it/s  ETA 0m
+    ep 2 step 675/750  loss 0.1472  lr 1.00e-05  3.71 it/s  ETA 0m
+    ep 2 step 700/750  loss 0.1184  lr 6.67e-06  3.74 it/s  ETA 0m
+    ep 2 step 725/750  loss 0.1457  lr 3.33e-06  3.76 it/s  ETA 0m
+    ep 2 step 750/750  loss 0.1617  lr 0.00e+00  3.78 it/s  ETA 0m
+    [ep 2] val loss 0.6517  train 0.1617  (800 mau val)
+    luu runs_drop_llama31/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001_last.pt  (52.0 MB)
+    luu runs_drop_llama31/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001_best.pt  (epoch 0, val 0.4755)
+    -> cham test o epoch 0 (val 0.4755), khong phai epoch cuoi (val 0.6517)
+
+  cham test (epoch 0):
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+    [drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 76.09   EM = 73.25   (1200 cau, 23s)
+
+  ket qua -> runs_drop_llama31/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001.json
+### slora_budget ket thuc rc=0 2026-11-10 14:43:12 UTC

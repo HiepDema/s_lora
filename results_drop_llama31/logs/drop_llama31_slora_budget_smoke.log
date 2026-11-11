@@ -1,0 +1,41 @@
+### slora_budget_smoke bat dau 2026-11-10 14:25:31 UTC
+
+=== drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001 ===
+model=unsloth/Meta-Llama-3.1-8B  targets=['self_attn.q_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+    1 mau dai hon 1024 token, da cat dau doan van
+  train 64 | val 16 | test 32  (tu 77409 train / 9536 dev, seed 42)
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 9769.97it/s]
+  hybrid: S-LoRA r=80 (non-square) + LoRA r=32 (square)...
+    8/32 blocks  (0s)
+    16/32 blocks  (0s)
+    24/32 blocks  (0s)
+    32/32 blocks  (0s)
+    hybrid: 32 S-LoRA (r=80), 32 square LoRA (r=32)
+
+  TRAIN DUOC: 13.631 M   [setup 3.4s]
+
+  train: 64 vi du, 16 optimizer steps, lr=0.0001, batch=4x2=8
+    ep 0 step 2/16  loss 2.2316  lr 8.75e-05  2.19 it/s  ETA 0m
+    ep 0 step 4/16  loss 2.1047  lr 7.50e-05  2.86 it/s  ETA 0m
+    ep 0 step 6/16  loss 2.0202  lr 6.25e-05  2.83 it/s  ETA 0m
+    ep 0 step 8/16  loss 1.8974  lr 5.00e-05  2.92 it/s  ETA 0m
+    [ep 0] val loss 0.7118  train 1.8974  (16 mau val)  <- tot nhat
+    ep 1 step 10/16  loss 1.7770  lr 3.75e-05  2.92 it/s  ETA 0m
+    ep 1 step 12/16  loss 1.6827  lr 2.50e-05  3.13 it/s  ETA 0m
+    ep 1 step 14/16  loss 1.5643  lr 1.25e-05  3.04 it/s  ETA 0m
+    ep 1 step 16/16  loss 1.4660  lr 0.00e+00  3.18 it/s  ETA 0m
+    [ep 1] val loss 0.7362  train 1.4660  (16 mau val)
+    luu runs_drop_llama31_smoke/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001_last.pt  (52.0 MB)
+    luu runs_drop_llama31_smoke/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001_best.pt  (epoch 0, val 0.7118)
+    -> cham test o epoch 0 (val 0.7118), khong phai epoch cuoi (val 0.7362)
+
+  cham test (epoch 0):
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+
+    [drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 51.59   EM = 43.75   (32 cau, 1s)
+
+  ket qua -> runs_drop_llama31_smoke/drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001.json
+### slora_budget_smoke ket thuc rc=0 2026-11-10 14:25:51 UTC

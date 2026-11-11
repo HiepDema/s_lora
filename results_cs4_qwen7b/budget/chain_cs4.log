@@ -1,0 +1,8 @@
+### [smoke:slora_budget] bat dau 2026-11-10 12:15:27 UTC
+    loss 1.6722 -> 0.3228
+    ok: 54.13M tham so, 2.31 it/s, VRAM 53.48 GB, merged fwd 30.363 ms
+### [smoke:slora_budget] ket thuc rc=0 2026-11-10 12:25:22 UTC
+### [full:slora_budget] bat dau 2026-11-10 12:25:22 UTC
+    TRUNG BINH: 84.77%
+### [full:slora_budget] ket thuc rc=0 2026-11-10 13:55:21 UTC
+### CHUOI XONG 2026-11-10 13:55:21 UTC

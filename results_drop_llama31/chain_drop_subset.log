@@ -1,0 +1,36 @@
+### [smoke:lora] bat dau 2026-11-10 14:23:25 UTC
+    loss 2.2332 -> 1.4706
+    ok: 13.63M tham so, F1 55.4, val [0.8142, 0.8378], VRAM 40.9 GB, merged fwd 32.873 ms
+### [smoke:lora] ket thuc rc=0 2026-11-10 14:23:42 UTC
+### [smoke:pissa] bat dau 2026-11-10 14:23:42 UTC
+    loss 2.2348 -> 1.4805
+    ok: 13.63M tham so, F1 55.2, val [0.7615, 0.6408], VRAM 40.9 GB, merged fwd 33.632 ms
+### [smoke:pissa] ket thuc rc=0 2026-11-10 14:25:03 UTC
+### [smoke:slora] bat dau 2026-11-10 14:25:03 UTC
+    loss 2.2309 -> 1.4729
+    ok: 10.49M tham so, F1 61.9, val [0.7364, 0.689], VRAM 41.1 GB, merged fwd 33.142 ms
+### [smoke:slora] ket thuc rc=0 2026-11-10 14:25:31 UTC
+### [smoke:slora_budget] bat dau 2026-11-10 14:25:31 UTC
+    loss 2.2316 -> 1.4660
+    ok: 13.63M tham so, F1 51.6, val [0.7118, 0.7362], VRAM 41.18 GB, merged fwd 33.205 ms
+### [smoke:slora_budget] ket thuc rc=0 2026-11-10 14:25:51 UTC
+### [smoke:dora] bat dau 2026-11-10 14:25:51 UTC
+    loss 2.2332 -> 1.4697
+    ok: 13.80M tham so, F1 55.2, val [0.8315, 0.812], VRAM 42.15 GB, merged fwd 33.255 ms
+### [smoke:dora] ket thuc rc=0 2026-11-10 14:26:09 UTC
+### [full:lora] bat dau 2026-11-10 14:26:09 UTC
+    [drop_lora_r32_na_s0_lr0.0001]  F1 = 74.72   EM = 71.50   (1200 cau, 22s)
+### [full:lora] ket thuc rc=0 2026-11-10 14:30:05 UTC
+### [full:pissa] bat dau 2026-11-10 14:30:05 UTC
+    [drop_pissa_r32_na_s0_lr0.0001]  F1 = 75.20   EM = 71.75   (1200 cau, 21s)
+### [full:pissa] ket thuc rc=0 2026-11-10 14:35:03 UTC
+### [full:slora] bat dau 2026-11-10 14:35:03 UTC
+    [drop_hybrid_r32q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 77.08   EM = 73.67   (1200 cau, 23s)
+### [full:slora] ket thuc rc=0 2026-11-10 14:39:07 UTC
+### [full:slora_budget] bat dau 2026-11-10 14:39:07 UTC
+    [drop_hybrid_r80q32_colperm_rms_lowrank_s0_lr0.0001]  F1 = 76.09   EM = 73.25   (1200 cau, 23s)
+### [full:slora_budget] ket thuc rc=0 2026-11-10 14:43:12 UTC
+### [full:dora] bat dau 2026-11-10 14:43:12 UTC
+    [drop_dora_r32_na_s0_lr0.0001]  F1 = 73.41   EM = 71.00   (1200 cau, 21s)
+### [full:dora] ket thuc rc=0 2026-11-10 14:47:30 UTC
+### CHUOI XONG 2026-11-10 14:47:30 UTC

@@ -226,7 +226,26 @@ def _per_task(r, tests):
     return " ".join(f"{SHORT[t]} {r[t]:.1f}" for t in tests)
 
 
-def train(model, data, tok, a):
+@torch.no_grad()
+def eval_loss(model, data, tok, a):
+    """Loss trung binh moi token response tren tap val, khong label smoothing."""
+    was = model.training
+    model.eval()
+    lossf = nn.CrossEntropyLoss(ignore_index=-100, reduction="sum")
+    tot, n = 0.0, 0
+    idx = sorted(range(len(data)), key=lambda j: len(data[j][0]))
+    for i in range(0, len(idx), a.batch):
+        ids, lab, att = collate([data[j] for j in idx[i:i + a.batch]], tok.eos_token_id)
+        ids, lab, att = ids.to(a.device), lab.to(a.device), att.to(a.device)
+        with amp(a):
+            lg = model(input_ids=ids, attention_mask=att).logits
+            tot += lossf(lg[:, :-1].reshape(-1, lg.shape[-1]), lab[:, 1:].reshape(-1)).item()
+        n += (lab[:, 1:] != -100).sum().item()
+    model.train(was)
+    return tot / max(n, 1)
+
+
+def train(model, data, tok, a, val_data=None):
     tp = [p for p in model.parameters() if p.requires_grad]
     # _no_decay: tham so khong khoi tao o 0 (m cua DoRA, A/B cua PiSSA). Weight
     # decay keo chung ve 0 la keo model ra xa W0.
@@ -256,6 +275,8 @@ def train(model, data, tok, a):
     # (loss response di ngang van co the la model chi hoc khuon cau tra loi).
     mid, a_mid = [], argparse.Namespace(**vars(a) | dict(limit_eval=a.eval_limit_mid,
                                                           eval_beams=1))
+    # Val loss cuoi moi epoch; giu ban sao (CPU) cua tham so train duoc o epoch tot nhat.
+    val_hist, best = [], dict(val=float("inf"), epoch=None, state=None)
     for ep in range(a.epochs):
         for bidx in make_batches(data, a.batch):
             ids, lab, att = collate([data[j] for j in bidx], tok.eos_token_id)
@@ -288,6 +309,23 @@ def train(model, data, tok, a):
                     print(f"    >> step {step} cham giua chung ({a.eval_limit_mid} cau/tac vu, "
                           f"greedy): TB {r['avg']:.2f}%  | {_per_task(r, a.tests)}", flush=True)
                     model.train()
+        if ep == a.epochs - 1 and micro % accum != 0:
+            # Buoc do dang cua lan tich luy cuoi: lam truoc khi do val epoch cuoi.
+            torch.nn.utils.clip_grad_norm_(tp, 1.0)
+            opt.step()
+            opt.zero_grad(set_to_none=True)
+            step += 1
+        if val_data:
+            vl = eval_loss(model, val_data, tok, a)
+            val_hist.append(round(vl, 4))
+            mark = ""
+            if vl < best["val"]:
+                best.update(val=vl, epoch=ep, state={
+                    n: p.detach().to("cpu", copy=True)
+                    for n, p in model.named_parameters() if p.requires_grad})
+                mark = "  <- tot nhat"
+            print(f"    [ep {ep}] val loss {vl:.4f}  train {run:.4f}  "
+                  f"({len(val_data)} mau val){mark}", flush=True)
         if a.eval_every and ep < a.epochs - 1:
             # Cuoi moi epoch (tru epoch cuoi, da co cham day du ngay sau).
             r = evaluate(model, tok, a.tests, a_mid)
@@ -295,24 +333,40 @@ def train(model, data, tok, a):
             print(f"    >> epoch {ep} xong (step {step}, loss {run:.4f}) cham {a.eval_limit_mid} "
                   f"cau/tac vu, greedy: TB {r['avg']:.2f}%  | {_per_task(r, a.tests)}", flush=True)
             model.train()
-    if micro % accum != 0:
-        torch.nn.utils.clip_grad_norm_(tp, 1.0)
-        opt.step()
-        opt.zero_grad(set_to_none=True)
-        step += 1
     el = time.perf_counter() - t0
     vram = (torch.cuda.max_memory_allocated() / 2**30
             if str(a.device).startswith("cuda") else 0.0)
+    meta = dict(model=a.model, method=a.method, rank=a.rank, alpha=a.alpha,
+                basis=a.basis, targets=a.targets, seed=a.seed)
     if not a.no_save_ckpt:
         os.makedirs(a.out_dir, exist_ok=True)
         p = f"{a.out_dir}/{a.tag}_last.pt"
         torch.save({"trainable": {n: v.detach().cpu() for n, v in model.named_parameters()
                                   if v.requires_grad},
-                    "meta": dict(model=a.model, method=a.method, rank=a.rank, alpha=a.alpha,
-                                 basis=a.basis, targets=a.targets, seed=a.seed, which="last")}, p)
+                    "meta": meta | dict(which="last", epoch=a.epochs - 1)}, p)
         print(f"    luu {p}  ({os.path.getsize(p) / 2**20:.1f} MB)")
-    return dict(final_loss=run, train_s=round(el, 1), train_it_s=round(step / el, 3),
-                steps_run=step, peak_vram_gb=round(vram, 2), mid_eval=mid)
+        if best["state"] is not None:
+            p = f"{a.out_dir}/{a.tag}_best.pt"
+            torch.save({"trainable": best["state"],
+                        "meta": meta | dict(which="best", epoch=best["epoch"],
+                                            val_loss=best["val"])}, p)
+            print(f"    luu {p}  (epoch {best['epoch']}, val {best['val']:.4f})")
+    restored = None
+    if (getattr(a, "best_epoch", False) and best["state"] is not None
+            and best["epoch"] != a.epochs - 1):
+        with torch.no_grad():
+            for n, p in model.named_parameters():
+                if n in best["state"]:
+                    p.copy_(best["state"][n].to(p.device))
+        restored = best["epoch"]
+        print(f"    -> cham test o epoch {restored} (val {best['val']:.4f}), "
+              f"khong phai epoch cuoi (val {val_hist[-1]:.4f})", flush=True)
+    out = dict(final_loss=run, train_s=round(el, 1), train_it_s=round(step / el, 3),
+               steps_run=step, peak_vram_gb=round(vram, 2), mid_eval=mid)
+    if val_hist:
+        out |= dict(val_hist=val_hist, best_val=round(best["val"], 4),
+                    best_epoch=best["epoch"], restored_epoch=restored)
+    return out
 
 
 # =========================================================================== main
@@ -400,6 +454,12 @@ def main():
     p.add_argument("--load-ckpt", default=None,
                    help="nap lai tham so train duoc va CHI danh gia, khong train")
     p.add_argument("--max-train", type=int, default=40000)
+    p.add_argument("--val-size", type=int, default=0,
+                   help="tach N mau tu tap train lam validation, do val loss cuoi moi "
+                        "epoch. LLM-Adapters/DoRA dung 120 (seed 42). 0 = tat")
+    p.add_argument("--best-epoch", action="store_true",
+                   help="cham test o epoch co val loss thap nhat thay vi epoch cuoi "
+                        "(can --val-size). Giao thuc DoRA chon checkpoint theo val loss.")
     p.add_argument("--limit-eval", type=int, default=None)
     p.add_argument("--eval-batch", type=int, default=16)
     p.add_argument("--max-new-tokens", type=int, default=32)
@@ -424,6 +484,8 @@ def main():
     p.add_argument("--tf32", action="store_true")
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     a = p.parse_args()
+    if a.best_epoch and a.val_size <= 0:
+        p.error("--best-epoch can --val-size > 0")
 
     if a.tf32:
         torch.backends.cuda.matmul.allow_tf32 = True
@@ -448,6 +510,8 @@ def main():
     # lr nam trong ten: cung method + rank o hai lr khac nhau se ghi de len
     # nhau neu khong (da xay ra o quet lr Gemma tren DART).
     tag += f"_lr{a.lr:g}"
+    if a.val_size > 0:
+        tag += f"_val{a.val_size}{'_bestep' if a.best_epoch else ''}"
     a.tag = tag
     print(f"\n=== {tag} ===\nmodel={a.model}  device={a.device}  targets={a.targets}")
 
@@ -458,16 +522,20 @@ def main():
 
     print("  nap du lieu...")
     a.grad_accum = a.grad_accum      # wire to train()
-    if a.load_ckpt:
-        data = []                       # chi eval, khong can du lieu train
-    else:
+    data, val_data = [], []
+    if not a.load_ckpt:                 # chi eval thi khong can du lieu train
         n_train = a.max_train if a.max_train > 0 else None
         ds = load_train(n_train, a.seed)
+        if a.val_size > 0:
+            # Nhu LLM-Adapters/DoRA: tach val tu chinh tap train, seed 42.
+            sp = ds.train_test_split(test_size=a.val_size, shuffle=True, seed=42)
+            ds = sp["train"]
+            val_data = encode_train(sp["test"], tok, a.max_len)
         data = encode_train(ds, tok, a.max_len)
     tests = load_tests(a.test_cache)
     a.tests = tests                     # train() can de cham giua chung
-    print(f"  train {len(data)} vi du | eval_max_len {a.eval_max_len} | test " +
-          ", ".join(f"{SHORT[t]} {len(v)}" for t, v in tests.items()))
+    print(f"  train {len(data)} vi du | val {len(val_data)} | eval_max_len {a.eval_max_len} "
+          f"| test " + ", ".join(f"{SHORT[t]} {len(v)}" for t, v in tests.items()))
 
     t0 = time.perf_counter()
     model, info = build_model(a)
@@ -491,8 +559,9 @@ def main():
         print(f"  nap {a.load_ckpt}  ({len(ck['trainable'])} tensor, meta={ck['meta'].get('which')})")
         res["loaded_ckpt"] = a.load_ckpt
     elif a.method != "none":
-        res["train"] = train(model, data, tok, a)
-    print("\n  danh gia 8 tac vu (epoch cuoi):")
+        res["train"] = train(model, data, tok, a, val_data)
+    ep_used = (res.get("train") or {}).get("restored_epoch")
+    print(f"\n  danh gia 8 tac vu ({'epoch cuoi' if ep_used is None else f'epoch {ep_used}'}):")
     res["acc"] = evaluate(model, tok, tests, a)
     print(f"\n    TRUNG BINH: {res['acc']['avg']:.2f}%")
 
@@ -518,6 +587,7 @@ def main():
             basis=a.basis if a.method in ("rowspace", "hybrid") else "na", seed=a.seed,
             trainable=info["trainable"], model=a.model, targets=",".join(a.targets),
             max_train=a.max_train, epochs=a.epochs, setup_s=setup_s,
+            val_size=a.val_size, best_epoch_sel=a.best_epoch,
             **{SHORT[t]: round(res["acc"][t], 2) for t in TASKS},
             avg=round(res["acc"]["avg"], 2), eval_s=res["acc"]["eval_s"],
             **res.get("train", {}), **res.get("bench", {}))) + "\n")

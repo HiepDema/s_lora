@@ -1,0 +1,34 @@
+### pissa_smoke bat dau 2026-11-10 14:23:42 UTC
+
+=== drop_pissa_r32_na_s0_lr0.0001 ===
+model=unsloth/Meta-Llama-3.1-8B  targets=['self_attn.q_proj', 'self_attn.v_proj']
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+    1 mau dai hon 1024 token, da cat dau doan van
+  train 64 | val 16 | test 32  (tu 77409 train / 9536 dev, seed 42)
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 9466.71it/s]
+
+  TRAIN DUOC: 13.631 M   [setup 65.9s]
+
+  train: 64 vi du, 16 optimizer steps, lr=0.0001, batch=4x2=8
+    ep 0 step 2/16  loss 2.2348  lr 8.75e-05  2.37 it/s  ETA 0m
+    ep 0 step 4/16  loss 2.1143  lr 7.50e-05  3.07 it/s  ETA 0m
+    ep 0 step 6/16  loss 2.0289  lr 6.25e-05  3.02 it/s  ETA 0m
+    ep 0 step 8/16  loss 1.9142  lr 5.00e-05  3.11 it/s  ETA 0m
+    [ep 0] val loss 0.7615  train 1.9142  (16 mau val)  <- tot nhat
+    ep 1 step 10/16  loss 1.7877  lr 3.75e-05  3.09 it/s  ETA 0m
+    ep 1 step 12/16  loss 1.6943  lr 2.50e-05  3.30 it/s  ETA 0m
+    ep 1 step 14/16  loss 1.5770  lr 1.25e-05  3.18 it/s  ETA 0m
+    ep 1 step 16/16  loss 1.4805  lr 0.00e+00  3.32 it/s  ETA 0m
+    [ep 1] val loss 0.6408  train 1.4805  (16 mau val)  <- tot nhat
+    luu runs_drop_llama31_smoke/drop_pissa_r32_na_s0_lr0.0001_last.pt  (52.0 MB)
+    luu runs_drop_llama31_smoke/drop_pissa_r32_na_s0_lr0.0001_best.pt  (epoch 1, val 0.6408)
+
+  cham test (epoch cuoi):
+[transformers] Both `max_new_tokens` (=32) and `max_length`(=131072) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+
+    [drop_pissa_r32_na_s0_lr0.0001]  F1 = 55.25   EM = 46.88   (32 cau, 1s)
+
+  ket qua -> runs_drop_llama31_smoke/drop_pissa_r32_na_s0_lr0.0001.json
+### pissa_smoke ket thuc rc=0 2026-11-10 14:25:03 UTC

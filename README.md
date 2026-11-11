@@ -464,9 +464,12 @@ The same protocol on Qwen2.5-7B, with all four methods run on one pipeline. Sett
   rounded away; this is what collapsed LoRA in that pipeline.
 - **S-LoRA at the same rank as the others.** r=32 on `k,v,up,down`, and LoRA r=32 on the
   square `q`, with `rms` and `--slora-impl lowrank`. That comes to 39% of LoRA's parameters.
-- **Scoring and seeds.** Beam-4 on the full test sets, one seed, one H100 PCIe. Logs are in
-  `results_cs4_qwen7b/`; to rerun, use `bash run_cs_4methods.sh lora|dora|pissa|slora`, or
-  `chain_cs4.sh` for all four in sequence.
+- **Scoring and seeds.** Beam-4 on the full test sets, one seed, one H100 PCIe. Every
+  method is scored at its final epoch. The LLM-Adapters/DoRA protocol differs here: it
+  keeps the checkpoint with the lowest loss on 120 held-out training examples.
+- **Rerunning.** Logs are in `results_cs4_qwen7b/`. To rerun, use
+  `bash run_cs_4methods.sh lora|dora|pissa|slora|slora_budget`, or `chain_cs4.sh` for the
+  four in sequence.
 
 | Method | Params | BoolQ | PIQA | SIQA | HellaS. | WinoG. | ARC-e | ARC-c | OBQA | **Avg** |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -474,9 +477,24 @@ The same protocol on Qwen2.5-7B, with all four methods run on one pipeline. Sett
 | DoRA r=32 | 54.89M (0.72%) | 71.44 | 85.64 | 79.02 | 89.49 | 85.64 | 90.74 | 80.89 | 86.40 | 83.66 |
 | PiSSA r=32 | 54.13M (0.71%) | **73.70** | 88.25 | 79.94 | **93.30** | **86.90** | 93.22 | **84.56** | **90.00** | **86.23** |
 | **S-LoRA r=32** | **21.10M (0.28%)** | 71.77 | **89.34** | **80.35** | 92.91 | 86.42 | **94.11** | 84.22 | 89.80 | 86.11 |
+| S-LoRA r=104 (same budget)† | 54.13M (0.71%) | 71.16 | 86.56 | 80.40 | 91.35 | 85.32 | 92.05 | 82.51 | 88.80 | 84.77 |
+
+† Ran on an H100 SXM; the other four ran on an H100 PCIe. The software is pinned to the
+same versions, so the scores compare, but the timings do not. Logs are in
+`results_cs4_qwen7b/budget/`.
 
 **At the same rank, with 39% of the parameters, S-LoRA beats LoRA by 2.90 and DoRA by
 2.45, and ties PiSSA (−0.12).** It is best of the four on PIQA, SIQA and ARC-e.
+
+**At the same budget it does worse than at the same rank.** With r=104 on
+`k,v,up,down`, it scores 84.77:
+
+- It still beats LoRA (+1.56) and DoRA (+1.11).
+- It is 1.34 below its own r=32 run, and 1.46 below PiSSA.
+
+Gemma 4B on DART showed the same thing: at a shared lr, more S-LoRA rank hurts. The r=104
+run learned more slowly from the start. At the end of epoch 0 its greedy check was 80.9,
+against 84.8 for r=32.
 
 Cost on the same H100 PCIe. Latency is measured at batch 8 × 128 tokens:
 
@@ -507,6 +525,98 @@ Four limits on this table:
   shared lr, costs LoRA and DoRA here has not been tested.
 - **No published anchor.** There are no published Qwen2.5-7B numbers on this benchmark.
   The LLaMA3-8B rows above come from a different model and are not comparable.
+
+## DROP on LLaMA-3.1-8B
+
+DROP is reading comprehension with discrete reasoning over a paragraph: counting, sorting
+and arithmetic. QuanTA (Chen et al., 2024) uses it as a high-intrinsic-rank task, and PMSS
+reuses that setup. We follow it:
+
+- **Recipe.** `q_proj` and `v_proj`, 3 epochs, batch 4 × 2, linear decay, no weight decay.
+- **Epoch selection.** The test score comes from the epoch with the lowest validation
+  loss (`--best-epoch`).
+- **Metric.** F1 and EM computed as in the official `drop_eval.py`, taking the maximum
+  over the original answer and every validated answer. Our implementation matches the
+  official script exactly on 3,000 prediction–answer pairs.
+- **Shared with the commonsense runs.** One lr of 1e-4, α = 2r, bf16 base weights with fp32
+  adapters, and S-LoRA with `rms` and `lowrank`. One seed, on one H100 SXM.
+
+The data is the original AllenNLP release, not `ucinlp/drop` on Hugging Face. The
+Hugging Face copy flattens each answer and its validated alternatives into one span list,
+so a two-span answer cannot be told apart from two alternative answers. Two settings:
+
+- **PMSS subset.** 2,000 training and 800 validation questions drawn from DROP train, and
+  1,200 test questions drawn from DROP dev, with seed 42.
+- **Full.** All 76,609 remaining training questions, the same 800 for validation, and all
+  9,536 dev questions as the test set.
+
+On LLaMA-3.1-8B, `q_proj` is square (4096×4096), so S-LoRA runs plain LoRA there. It
+differs from LoRA only on `v_proj` (4096 → 1024).
+
+| Method | Params | Subset F1 | Subset EM | Full F1 | Full EM | Best val loss (full) |
+|---|---|---|---|---|---|---|
+| LoRA r=32 | 13.63M | 74.72 | 71.50 | 82.58 | 80.00 | 0.3413 |
+| DoRA r=32 | 13.80M | 73.41 | 71.00 | 83.66 | 81.20 | 0.3317 |
+| PiSSA r=32 | 13.63M | 75.20 | 71.75 | 84.46 | 82.05 | **0.3162** |
+| **S-LoRA r=32 (same rank)** | **10.49M** | **77.08** | **73.67** | **85.09** | **82.69** | 0.3164 |
+| S-LoRA r=80 on `v` (same budget) | 13.63M | 76.09 | 73.25 | 84.28 | 81.84 | 0.3230 |
+
+To check which gaps exceed noise, we ran a paired bootstrap of the per-question F1
+difference on the same test questions. Brackets are 95% intervals, and bold marks an
+interval that excludes zero:
+
+| S-LoRA minus | Subset (1,200 questions) | Full (9,536 questions) |
+|---|---|---|
+| r=32 − LoRA | **+2.36 [+0.35, +4.35]** | **+2.51 [+1.91, +3.14]** |
+| r=32 − DoRA | **+3.67 [+1.56, +5.86]** | **+1.43 [+0.83, +2.01]** |
+| r=32 − PiSSA | +1.89 [−0.20, +4.02] | +0.63 [+0.00, +1.24] |
+| r=80 − LoRA | +1.37 [−0.68, +3.48] | **+1.70 [+1.08, +2.33]** |
+| r=80 − DoRA | **+2.68 [+0.66, +4.82]** | +0.62 [+0.00, +1.23] |
+| r=80 − PiSSA | +0.89 [−1.10, +3.06] | −0.19 [−0.82, +0.44] |
+
+**On the full data, S-LoRA at the same rank leads every method with 77% of their
+parameters.**
+- It beats LoRA by 2.51 F1 and DoRA by 1.43, both well clear of noise.
+- Over PiSSA it is +0.63, with an interval that just touches zero.
+- The subset gives the same ordering. Its 1,200 test questions make the intervals about
+  three times wider.
+
+**The same budget is again weaker than the same rank.** This is the third model where that
+holds, after Gemma 4B on DART and Qwen2.5-7B on commonsense. r=80 still beats LoRA on the
+full data (+1.70) and ties PiSSA.
+
+**The subset overfits after two epochs, and the full data barely does.** Every subset run
+has its worst validation loss at epoch 2, so selecting on validation matters there. On the
+full data, every run's best validation loss is at epoch 1.
+
+Cost on the full data, on an H100 SXM; latency is measured at batch 8 × 128 tokens:
+
+| | LoRA | PiSSA | S-LoRA r=32 | S-LoRA r=80 | DoRA |
+|---|---|---|---|---|---|
+| Training wall time | 109 min | 110 min | 111 min | 112 min | 123 min |
+| Peak training memory | 40.9 GB | 40.9 GB | 41.1 GB | 41.2 GB | 42.2 GB |
+| **Forward, merged** | **33.3 ms** | **33.7 ms** | **33.2 ms** | **33.4 ms** | **33.3 ms** |
+
+Limits:
+
+- **One seed and one shared lr.**
+- **Only one adapted matrix per layer differs from LoRA.** With `q,v`, S-LoRA's only
+  difference from LoRA is `v_proj`. A `q,k,v,up,down` run would test the method on more of
+  the model.
+- **Validation passages may repeat.** Validation questions are sampled per question from
+  DROP train, so their passages can also appear in training. The test set comes from dev
+  and shares no passages with either.
+- **No published anchor for this model.** The PMSS numbers are on LLaMA-2 (LoRA 54–56,
+  PMSS 59.6 on the subset), so they are not comparable with these.
+- **A stray traceback in the LoRA log.** `logs/drop_llama31_lora_full.log` starts with the
+  output of a duplicate launch, including an out-of-memory traceback. That launch was killed
+  after two minutes. The LoRA result comes from the other process, which ran without
+  gradient checkpointing.
+
+Results are in `results_drop_llama31/`, with `summary_subset.jsonl`, `summary_full.jsonl`
+and the logs. To rerun, use `bash run_drop5.sh lora|dora|pissa|slora|slora_budget`, or
+`chain_drop.sh` for all five. For the full data, set
+`FULL_EXTRA="--n-train 0 --n-test 0" FULL_SUF=_full`.
 
 ## VTAB-1k on ViT-B/16
 
